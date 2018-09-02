@@ -265,11 +265,11 @@ nvmlReturn_t nvmlInit_dl(void) {
   if (nvmlDeviceGetPowerUsageFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
-  nvmlDeviceGetCurrPcieLinkGenerationFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrPcieLinkGenerationFunc");
+  nvmlDeviceGetCurrPcieLinkGenerationFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrPcieLinkGeneration");
   if (nvmlDeviceGetCurrPcieLinkGenerationFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
-  nvmlDeviceGetCurrPcieLinkWidthFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrPcieLinkWidthFunc");
+  nvmlDeviceGetCurrPcieLinkWidthFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrPcieLinkWidth");
   if (nvmlDeviceGetCurrPcieLinkWidthFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
