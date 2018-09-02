@@ -111,12 +111,12 @@ nvmlReturn_t nvmlDeviceGetComputeMode(nvmlDevice_t device, nvmlComputeMode_t *mo
   return nvmlDeviceGetComputeModeFunc(device, mode);
 }
 
-nvmlReturn_t (*nvmlDeviceGetApplicationsClockFunc)(nvmlDevice_t device, nvmlClockType_t clockType, unsigned int* clockMHz);
-nvmlReturn_t nvmlDeviceGetApplicationsClock(nvmlDevice_t device, nvmlClockType_t clockType, unsigned int* clockMHz) {
-  if (nvmlDeviceGetApplicationsClockFunc == NULL) {
+nvmlReturn_t (*nvmlDeviceGetClockInfoFunc)(nvmlDevice_t device, nvmlClockType_t clockType, unsigned int* clockMHz);
+nvmlReturn_t nvmlDeviceGetClockInfo(nvmlDevice_t device, nvmlClockType_t clockType, unsigned int* clockMHz) {
+  if (nvmlDeviceGetClockInfoFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
-  return nvmlDeviceGetApplicationsClockFunc(device, clockType, clockMHz);
+  return nvmlDeviceGetClockInfoFunc(device, clockType, clockMHz);
 }
 
 nvmlReturn_t (*nvmlDeviceGetMemoryInfoFunc)(nvmlDevice_t device, nvmlMemory_t *memory);
@@ -249,8 +249,8 @@ nvmlReturn_t nvmlInit_dl(void) {
   if (nvmlDeviceGetComputeModeFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
-  nvmlDeviceGetApplicationsClockFunc = dlsym(nvmlHandle, "nvmlDeviceGetApplicationsClock");
-  if (nvmlDeviceGetApplicationsClockFunc == NULL) {
+  nvmlDeviceGetClockInfoFunc = dlsym(nvmlHandle, "nvmlDeviceGetClockInfo");
+  if (nvmlDeviceGetClockInfoFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlDeviceGetMemoryInfoFunc = dlsym(nvmlHandle, "nvmlDeviceGetMemoryInfo");
@@ -531,7 +531,7 @@ func (d Device) GrClock() (uint, error) {
 		return 0, errLibraryNotLoaded
 	}
 	var clockMHz C.uint
-	r := C.nvmlDeviceGetApplicationsClock(d.dev, ctGraphics, &clockMHz)
+	r := C.nvmlDeviceGetClockInfo(d.dev, ctGraphics, &clockMHz)
 	return uint(clockMHz), errorString(r)
 }
 
@@ -541,7 +541,7 @@ func (d Device) MemClock() (uint, error) {
 		return 0, errLibraryNotLoaded
 	}
 	var clockMHz C.uint
-	r := C.nvmlDeviceGetApplicationsClock(d.dev, ctMemory, &clockMHz)
+	r := C.nvmlDeviceGetClockInfo(d.dev, ctMemory, &clockMHz)
 	return uint(clockMHz), errorString(r)
 }
 
@@ -551,7 +551,7 @@ func (d Device) SMClock() (uint, error) {
 		return 0, errLibraryNotLoaded
 	}
 	var clockMHz C.uint
-	r := C.nvmlDeviceGetApplicationsClock(d.dev, ctSM, &clockMHz)
+	r := C.nvmlDeviceGetClockInfo(d.dev, ctSM, &clockMHz)
 	return uint(clockMHz), errorString(r)
 }
 
