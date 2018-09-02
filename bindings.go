@@ -87,6 +87,38 @@ nvmlReturn_t nvmlDeviceGetName(nvmlDevice_t device, char *name, unsigned int len
   return nvmlDeviceGetNameFunc(device, name, length);
 }
 
+nvmlReturn_t (*nvmlDeviceGetBrandFunc)(nvmlDevice_t device, nvmlBrandType_t *type);
+nvmlReturn_t nvmlDeviceGetBrand(nvmlDevice_t device, nvmlBrandType_t *type) {
+  if (nvmlDeviceGetBrandFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetBrandFunc(device, type);
+}
+
+nvmlReturn_t (*nvmlDeviceGetPersistenceModeFunc)(nvmlDevice_t device, nvmlEnableState_t *state);
+nvmlReturn_t nvmlDeviceGetPersistenceMode(nvmlDevice_t device, nvmlEnableState_t *state) {
+  if (nvmlDeviceGetPersistenceModeFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetPersistenceModeFunc(device, state);
+}
+
+nvmlReturn_t (*nvmlDeviceGetComputeModeFunc)(nvmlDevice_t device, nvmlComputeMode_t *mode);
+nvmlReturn_t nvmlDeviceGetComputeMode(nvmlDevice_t device, nvmlComputeMode_t *mode) {
+  if (nvmlDeviceGetComputeModeFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetComputeModeFunc(device, mode);
+}
+
+nvmlReturn_t (*nvmlDeviceGetApplicationsClockFunc)(nvmlDevice_t device, nvmlClockType_t clockType, unsigned int* clockMHz);
+nvmlReturn_t nvmlDeviceGetApplicationsClock(nvmlDevice_t device, nvmlClockType_t clockType, unsigned int* clockMHz) {
+  if (nvmlDeviceGetApplicationsClockFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetApplicationsClockFunc(device, clockType, clockMHz);
+}
+
 nvmlReturn_t (*nvmlDeviceGetMemoryInfoFunc)(nvmlDevice_t device, nvmlMemory_t *memory);
 nvmlReturn_t nvmlDeviceGetMemoryInfo(nvmlDevice_t device, nvmlMemory_t *memory) {
   if (nvmlDeviceGetMemoryInfoFunc == NULL) {
@@ -109,6 +141,22 @@ nvmlReturn_t nvmlDeviceGetPowerUsage(nvmlDevice_t device, unsigned int *power) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   return nvmlDeviceGetPowerUsageFunc(device, power);
+}
+
+nvmlReturn_t (*nvmlDeviceGetCurrPcieLinkGenerationFunc)(nvmlDevice_t device, unsigned int *currLinkGen);
+nvmlReturn_t nvmlDeviceGetCurrPcieLinkGeneration(nvmlDevice_t device, unsigned int *currLinkGen) {
+  if (nvmlDeviceGetCurrPcieLinkGenerationFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetCurrPcieLinkGeneration(device, currLinkGen);
+}
+
+nvmlReturn_t (*nvmlDeviceGetCurrPcieLinkWidthFunc)(nvmlDevice_t device, unsigned int *currLinkWidth);
+nvmlReturn_t nvmlDeviceGetCurrPcieLinkWidth(nvmlDevice_t device, unsigned int *currLinkWidth) {
+  if (nvmlDeviceGetCurrPcieLinkWidthFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetCurrPcieLinkWidth(device, currLinkWidth);
 }
 
 nvmlReturn_t (*nvmlDeviceGetTemperatureFunc)(nvmlDevice_t device, nvmlTemperatureSensors_t sensorType, unsigned int *temp);
@@ -189,6 +237,22 @@ nvmlReturn_t nvmlInit_dl(void) {
   if (nvmlDeviceGetNameFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
+  nvmlDeviceGetBrandFunc = dlsym(nvmlHandle, "nvmlDeviceGetBrand");
+  if (nvmlDeviceGetBrandFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceGetPersistenceModeFunc = dlsym(nvmlHandle, "nvmlDeviceGetPersistenceMode");
+  if (nvmlDeviceGetPersistenceModeFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceGetComputeModeFunc = dlsym(nvmlHandle, "nvmlDeviceGetComputeMode");
+  if (nvmlDeviceGetComputeModeFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceGetApplicationsClockFunc = dlsym(nvmlHandle, "nvmlDeviceGetApplicationsClock");
+  if (nvmlDeviceGetApplicationsClockFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
   nvmlDeviceGetMemoryInfoFunc = dlsym(nvmlHandle, "nvmlDeviceGetMemoryInfo");
   if (nvmlDeviceGetMemoryInfoFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
@@ -199,6 +263,14 @@ nvmlReturn_t nvmlInit_dl(void) {
   }
   nvmlDeviceGetPowerUsageFunc = dlsym(nvmlHandle, "nvmlDeviceGetPowerUsage");
   if (nvmlDeviceGetPowerUsageFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceGetCurrPcieLinkGenerationFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrPcieLinkGenerationFunc");
+  if (nvmlDeviceGetCurrPcieLinkGenerationFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceGetCurrPcieLinkWidthFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrPcieLinkWidthFunc");
+  if (nvmlDeviceGetCurrPcieLinkWidthFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlDeviceGetTemperatureFunc = dlsym(nvmlHandle, "nvmlDeviceGetTemperature");
@@ -316,9 +388,12 @@ import (
 )
 
 const (
-	szDriver = C.NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE
-	szName   = C.NVML_DEVICE_NAME_BUFFER_SIZE
-	szUUID   = C.NVML_DEVICE_UUID_BUFFER_SIZE
+	szDriver   = C.NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE
+	szName     = C.NVML_DEVICE_NAME_BUFFER_SIZE
+	szUUID     = C.NVML_DEVICE_UUID_BUFFER_SIZE
+	ctGraphics = C.NVML_CLOCK_GRAPHICS
+	ctSM       = C.NVML_CLOCK_SM
+	ctMemory   = C.NVML_CLOCK_MEM
 )
 
 var errLibraryNotLoaded = errors.New("could not load NVML library")
@@ -420,6 +495,66 @@ func (d Device) Name() (string, error) {
 	return C.GoString(&name[0]), errorString(r)
 }
 
+// Brand returns the product brand type of the device
+func (d Device) Brand() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var b C.nvmlBrandType_t
+	r := C.nvmlDeviceGetBrand(d.dev, &b)
+	return uint(b), errorString(r)
+}
+
+// PersistenceMode returns the current driver persistence mode of the device.
+func (d Device) PersistenceMode() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var pm C.nvmlEnableState_t
+	r := C.nvmlDeviceGetPersistenceMode(d.dev, &pm)
+	return uint(pm), errorString(r)
+}
+
+// ComputeMode returns the current compute mode of the device.
+func (d Device) ComputeMode() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var cm C.nvmlComputeMode_t
+	r := C.nvmlDeviceGetComputeMode(d.dev, &cm)
+	return uint(cm), errorString(r)
+}
+
+// GrClock returns the application graphics clock of the device.
+func (d Device) GrClock() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var clockMHz C.uint
+	r := C.nvmlDeviceGetApplicationsClock(d.dev, ctGraphics, &clockMHz)
+	return uint(clockMHz), errorString(r)
+}
+
+// MemClock returns the application memory clock of the device.
+func (d Device) MemClock() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var clockMHz C.uint
+	r := C.nvmlDeviceGetApplicationsClock(d.dev, ctMemory, &clockMHz)
+	return uint(clockMHz), errorString(r)
+}
+
+// SMClock returns the application SM clock of the device.
+func (d Device) SMClock() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var clockMHz C.uint
+	r := C.nvmlDeviceGetApplicationsClock(d.dev, ctSM, &clockMHz)
+	return uint(clockMHz), errorString(r)
+}
+
 // MemoryInfo returns the total and used memory (in bytes) of the device.
 func (d Device) MemoryInfo() (uint64, uint64, error) {
 	if C.nvmlHandle == nil {
@@ -475,6 +610,26 @@ func (d Device) AverageGPUUtilization(since time.Duration) (uint, error) {
 	lastTs := C.ulonglong(time.Now().Add(-1*since).UnixNano() / 1000)
 	var n C.uint
 	r := C.nvmlDeviceGetAverageUsage(d.dev, C.NVML_GPU_UTILIZATION_SAMPLES, lastTs, &n)
+	return uint(n), errorString(r)
+}
+
+// PCIEGeneration returns the current PCIe link generation
+func (d Device) PCIEGeneration() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var n C.uint
+	r := C.nvmlDeviceGetCurrPcieLinkGeneration(d.dev, &n)
+	return uint(n), errorString(r)
+}
+
+// PCIEWidth returns the current PCIe link width
+func (d Device) PCIEWidth() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var n C.uint
+	r := C.nvmlDeviceGetCurrPcieLinkWidth(d.dev, &n)
 	return uint(n), errorString(r)
 }
 

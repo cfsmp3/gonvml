@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PKG=github.com/mindprince/gonvml
+PKG=github.com/wminshew/gonvml
 
 .PHONY: build
 build:
-	docker run -v $(shell pwd):/go/src/$(PKG) --workdir=/go/src/$(PKG) golang:1.8 go build cmd/example/example.go
+	docker run -v $(shell pwd):/go/src/$(PKG) --workdir=/go/src/$(PKG) golang:1.9 go build cmd/example/example.go
 
 .PHONY: presubmit
 presubmit:

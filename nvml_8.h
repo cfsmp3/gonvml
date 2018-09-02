@@ -1,5 +1,5 @@
 /*
- * Copyright 1993-2017 NVIDIA Corporation.  All rights reserved.
+ * Copyright 1993-2016 NVIDIA Corporation.  All rights reserved.
  *
  * NOTICE TO USER:   
  *
@@ -95,14 +95,13 @@ extern "C" {
 /**
  * NVML API versioning support
  */
-#define NVML_API_VERSION            9
-#define NVML_API_VERSION_STR        "9"
+#define NVML_API_VERSION            8
+#define NVML_API_VERSION_STR        "8"
 #define nvmlInit                    nvmlInit_v2
-#define nvmlDeviceGetPciInfo        nvmlDeviceGetPciInfo_v3
+#define nvmlDeviceGetPciInfo        nvmlDeviceGetPciInfo_v2
 #define nvmlDeviceGetCount          nvmlDeviceGetCount_v2
 #define nvmlDeviceGetHandleByIndex  nvmlDeviceGetHandleByIndex_v2
 #define nvmlDeviceGetHandleByPciBusId nvmlDeviceGetHandleByPciBusId_v2
-#define nvmlDeviceGetNvLinkRemotePciInfo nvmlDeviceGetNvLinkRemotePciInfo_v2
 
 /***************************************************************************************************/
 /** @defgroup nvmlDeviceStructs Device Structs
@@ -123,28 +122,27 @@ typedef struct nvmlDevice_st* nvmlDevice_t;
 /**
  * Buffer size guaranteed to be large enough for pci bus id
  */
-#define NVML_DEVICE_PCI_BUS_ID_BUFFER_SIZE      32
-
-/**
- * Buffer size guaranteed to be large enough for pci bus id for ::busIdLegacy
- */
-#define NVML_DEVICE_PCI_BUS_ID_BUFFER_V2_SIZE   16
+#define NVML_DEVICE_PCI_BUS_ID_BUFFER_SIZE   16
 
 /**
  * PCI information about a GPU device.
  */
-typedef struct nvmlPciInfo_st
+typedef struct nvmlPciInfo_st 
 {
-    char busIdLegacy[NVML_DEVICE_PCI_BUS_ID_BUFFER_V2_SIZE]; //!< The legacy tuple domain:bus:device.function PCI identifier (&amp; NULL terminator)
-    unsigned int domain;             //!< The PCI domain on which the device's bus resides, 0 to 0xffffffff
+    char busId[NVML_DEVICE_PCI_BUS_ID_BUFFER_SIZE]; //!< The tuple domain:bus:device.function PCI identifier (&amp; NULL terminator)
+    unsigned int domain;             //!< The PCI domain on which the device's bus resides, 0 to 0xffff
     unsigned int bus;                //!< The bus on which the device resides, 0 to 0xff
     unsigned int device;             //!< The device's id on the bus, 0 to 31
     unsigned int pciDeviceId;        //!< The combined 16-bit device id and 16-bit vendor id
-
+    
     // Added in NVML 2.285 API
     unsigned int pciSubSystemId;     //!< The 32-bit Sub System Device ID
-
-    char busId[NVML_DEVICE_PCI_BUS_ID_BUFFER_SIZE]; //!< The tuple domain:bus:device.function PCI identifier (&amp; NULL terminator)
+    
+    // NVIDIA reserved for internal use only
+    unsigned int reserved0;
+    unsigned int reserved1;
+    unsigned int reserved2;
+    unsigned int reserved3;
 } nvmlPciInfo_t;
 
 /**
@@ -490,9 +488,7 @@ typedef enum nvmlTemperatureThresholds_enum
 {
     NVML_TEMPERATURE_THRESHOLD_SHUTDOWN = 0,    // Temperature at which the GPU will shut down
                                                 // for HW protection
-    NVML_TEMPERATURE_THRESHOLD_SLOWDOWN = 1,    // Temperature at which the GPU will begin HW slowdown
-    NVML_TEMPERATURE_THRESHOLD_MEM_MAX  = 2,    // Memory Temperature at which the GPU will begin SW slowdown
-    NVML_TEMPERATURE_THRESHOLD_GPU_MAX  = 3,    // GPU Temperature at which the GPU can be throttled below base clock
+    NVML_TEMPERATURE_THRESHOLD_SLOWDOWN = 1,    // Temperature at which the GPU will begin slowdown
     // Keep this last
     NVML_TEMPERATURE_THRESHOLD_COUNT
 } nvmlTemperatureThresholds_t;
@@ -897,10 +893,7 @@ typedef enum nvmlGpuVirtualizationMode {
 /* Memory temperatures */
 #define NVML_FI_DEV_MEMORY_TEMP  82 //!< Memory temperature for the device
 
-/* Energy Counter */
-#define NVML_FI_DEV_TOTAL_ENERGY_CONSUMPTION 83 //!< Total energy consumption for the GPU in mJ since the driver was last reloaded
-
-#define NVML_FI_MAX 84 //!< One greater than the largest field ID defined above
+#define NVML_FI_MAX 83 //!< One greater than the largest field ID defined above
 
 /**
  * Information for a Field Value Sample
@@ -1151,15 +1144,6 @@ typedef struct nvmlEventData_st
  */
 #define nvmlClocksThrottleReasonSyncBoost                 0x0000000000000010LL
 
-/** SW Thermal Slowdown
- *
- * This is an indicator of one or more of the following:
- *  - Current GPU temperature above the GPU Max Operating Temperature
- *  - Current memory temperature above the Memory Max Operating Temperature
- *
- */
-#define nvmlClocksThrottleReasonSwThermalSlowdown         0x0000000000000020LL
-
 /** Bit mask representing no clocks throttling
  *
  * Clocks are as high as possible.
@@ -1175,7 +1159,6 @@ typedef struct nvmlEventData_st
       | nvmlClocksThrottleReasonSwPowerCap                        \
       | nvmlClocksThrottleReasonHwSlowdown                        \
       | nvmlClocksThrottleReasonSyncBoost                         \
-      | nvmlClocksThrottleReasonSwThermalSlowdown                 \
 )
 /** @} */
 
@@ -2405,10 +2388,6 @@ nvmlReturn_t DECLDIR nvmlDeviceGetPersistenceMode(nvmlDevice_t device, nvmlEnabl
  *
  * See \ref nvmlPciInfo_t for details on the available PCI info.
  *
- * NOTE: If you are linking against a driver earlier than r384.40, then nvmlDeviceGetPciInfo_v2 must be used. This
- *       API does not populate pci->busId. pci->busIdLegacy will be populated for both nvmlDeviceGetPciInfo and 
- *       nvmlDeviceGetPciInfo_v2.
- *
  * @param device                               The identifier of the target device
  * @param pci                                  Reference in which to return the PCI info
  * 
@@ -2420,7 +2399,6 @@ nvmlReturn_t DECLDIR nvmlDeviceGetPersistenceMode(nvmlDevice_t device, nvmlEnabl
  *         - \ref NVML_ERROR_UNKNOWN           on any unexpected error
  */
 nvmlReturn_t DECLDIR nvmlDeviceGetPciInfo(nvmlDevice_t device, nvmlPciInfo_t *pci);
-nvmlReturn_t DECLDIR nvmlDeviceGetPciInfo_v2(nvmlDevice_t device, nvmlPciInfo_t *pci);
 
 /**
  * Retrieves the maximum PCIe link generation possible with this device and system
@@ -5613,7 +5591,6 @@ nvmlReturn_t DECLDIR nvmlDeviceGetProcessUtilization(nvmlDevice_t device, nvmlPr
  * NVML API versioning support
  */
 #if defined(__NVML_API_VERSION_INTERNAL)
-#undef nvmlDeviceGetNvLinkRemotePciInfo
 #undef nvmlDeviceGetPciInfo
 #undef nvmlDeviceGetCount
 #undef nvmlDeviceGetHandleByIndex
