@@ -172,7 +172,7 @@ nvmlReturn_t nvmlDeviceGetPcieThroughput(nvmlDevice_t device, nvmlPcieUtilCounte
   if (nvmlDeviceGetPcieThroughputFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
-  return nvmlDeviceGetPcieThroughput(device, counter, value);
+  return nvmlDeviceGetPcieThroughputFunc(device, counter, value);
 }
 
 nvmlReturn_t (*nvmlDeviceGetCurrPcieLinkGenerationFunc)(nvmlDevice_t device, unsigned int *currLinkGen);
@@ -180,7 +180,7 @@ nvmlReturn_t nvmlDeviceGetCurrPcieLinkGeneration(nvmlDevice_t device, unsigned i
   if (nvmlDeviceGetCurrPcieLinkGenerationFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
-  return nvmlDeviceGetCurrPcieLinkGeneration(device, currLinkGen);
+  return nvmlDeviceGetCurrPcieLinkGenerationFunc(device, currLinkGen);
 }
 
 nvmlReturn_t (*nvmlDeviceGetCurrPcieLinkWidthFunc)(nvmlDevice_t device, unsigned int *currLinkWidth);
@@ -188,7 +188,7 @@ nvmlReturn_t nvmlDeviceGetCurrPcieLinkWidth(nvmlDevice_t device, unsigned int *c
   if (nvmlDeviceGetCurrPcieLinkWidthFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
-  return nvmlDeviceGetCurrPcieLinkWidth(device, currLinkWidth);
+  return nvmlDeviceGetCurrPcieLinkWidthFunc(device, currLinkWidth);
 }
 
 nvmlReturn_t (*nvmlDeviceGetMaxPcieLinkGenerationFunc)(nvmlDevice_t device, unsigned int *maxLinkGen);
@@ -196,7 +196,7 @@ nvmlReturn_t nvmlDeviceGetMaxPcieLinkGeneration(nvmlDevice_t device, unsigned in
   if (nvmlDeviceGetMaxPcieLinkGenerationFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
-  return nvmlDeviceGetMaxPcieLinkGeneration(device, maxLinkGen);
+  return nvmlDeviceGetMaxPcieLinkGenerationFunc(device, maxLinkGen);
 }
 
 nvmlReturn_t (*nvmlDeviceGetMaxPcieLinkWidthFunc)(nvmlDevice_t device, unsigned int *maxLinkWidth);
@@ -204,7 +204,7 @@ nvmlReturn_t nvmlDeviceGetMaxPcieLinkWidth(nvmlDevice_t device, unsigned int *ma
   if (nvmlDeviceGetMaxPcieLinkWidthFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
-  return nvmlDeviceGetMaxPcieLinkWidth(device, maxLinkWidth);
+  return nvmlDeviceGetMaxPcieLinkWidthFunc(device, maxLinkWidth);
 }
 
 nvmlReturn_t (*nvmlDeviceGetTemperatureFunc)(nvmlDevice_t device, nvmlTemperatureSensors_t sensorType, unsigned int *temp);
