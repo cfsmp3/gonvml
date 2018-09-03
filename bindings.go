@@ -103,6 +103,14 @@ nvmlReturn_t nvmlDeviceGetPersistenceMode(nvmlDevice_t device, nvmlEnableState_t
   return nvmlDeviceGetPersistenceModeFunc(device, state);
 }
 
+nvmlReturn_t (*nvmlDeviceSetPersistenceModeFunc)(nvmlDevice_t device, nvmlEnableState_t state);
+nvmlReturn_t nvmlDeviceSetPersistenceMode(nvmlDevice_t device, nvmlEnableState_t state) {
+  if (nvmlDeviceSetPersistenceModeFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceSetPersistenceModeFunc(device, state);
+}
+
 nvmlReturn_t (*nvmlDeviceGetComputeModeFunc)(nvmlDevice_t device, nvmlComputeMode_t *mode);
 nvmlReturn_t nvmlDeviceGetComputeMode(nvmlDevice_t device, nvmlComputeMode_t *mode) {
   if (nvmlDeviceGetComputeModeFunc == NULL) {
@@ -283,6 +291,10 @@ nvmlReturn_t nvmlInit_dl(void) {
   }
   nvmlDeviceGetPersistenceModeFunc = dlsym(nvmlHandle, "nvmlDeviceGetPersistenceMode");
   if (nvmlDeviceGetPersistenceModeFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceSetPersistenceModeFunc = dlsym(nvmlHandle, "nvmlDeviceSetPersistenceMode");
+  if (nvmlDeviceSetPersistenceModeFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlDeviceGetComputeModeFunc = dlsym(nvmlHandle, "nvmlDeviceGetComputeMode");
@@ -575,6 +587,15 @@ func (d Device) PersistenceMode() (uint, error) {
 	var pm C.nvmlEnableState_t
 	r := C.nvmlDeviceGetPersistenceMode(d.dev, &pm)
 	return uint(pm), errorString(r)
+}
+
+// SetPersistenceMode sets the current driver persistence mode of the device.
+func (d Device) SetPersistenceMode(mode uint) error {
+	if C.nvmlHandle == nil {
+		return errLibraryNotLoaded
+	}
+	r := C.nvmlDeviceSetPersistenceMode(d.dev, C.nvmlEnableState_t(mode))
+	return errorString(r)
 }
 
 // ComputeMode returns the current compute mode of the device.
