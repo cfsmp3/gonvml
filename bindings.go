@@ -535,16 +535,6 @@ func (d Device) GrClock() (uint, error) {
 	return uint(clockMHz), errorString(r)
 }
 
-// MemClock returns the application memory clock of the device.
-func (d Device) MemClock() (uint, error) {
-	if C.nvmlHandle == nil {
-		return 0, errLibraryNotLoaded
-	}
-	var clockMHz C.uint
-	r := C.nvmlDeviceGetClockInfo(d.dev, ctMemory, &clockMHz)
-	return uint(clockMHz), errorString(r)
-}
-
 // SMClock returns the application SM clock of the device.
 func (d Device) SMClock() (uint, error) {
 	if C.nvmlHandle == nil {
@@ -552,6 +542,16 @@ func (d Device) SMClock() (uint, error) {
 	}
 	var clockMHz C.uint
 	r := C.nvmlDeviceGetClockInfo(d.dev, ctSM, &clockMHz)
+	return uint(clockMHz), errorString(r)
+}
+
+// MemClock returns the application memory clock of the device.
+func (d Device) MemClock() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var clockMHz C.uint
+	r := C.nvmlDeviceGetClockInfo(d.dev, ctMemory, &clockMHz)
 	return uint(clockMHz), errorString(r)
 }
 
@@ -613,8 +613,8 @@ func (d Device) AverageGPUUtilization(since time.Duration) (uint, error) {
 	return uint(n), errorString(r)
 }
 
-// PCIEGeneration returns the current PCIe link generation
-func (d Device) PCIEGeneration() (uint, error) {
+// PcieGeneration returns the current PCIe link generation
+func (d Device) PcieGeneration() (uint, error) {
 	if C.nvmlHandle == nil {
 		return 0, errLibraryNotLoaded
 	}
@@ -623,8 +623,8 @@ func (d Device) PCIEGeneration() (uint, error) {
 	return uint(n), errorString(r)
 }
 
-// PCIEWidth returns the current PCIe link width
-func (d Device) PCIEWidth() (uint, error) {
+// PcieWidth returns the current PCIe link width
+func (d Device) PcieWidth() (uint, error) {
 	if C.nvmlHandle == nil {
 		return 0, errLibraryNotLoaded
 	}
