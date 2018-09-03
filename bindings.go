@@ -151,6 +151,22 @@ nvmlReturn_t nvmlDeviceGetCurrPcieLinkGeneration(nvmlDevice_t device, unsigned i
   return nvmlDeviceGetCurrPcieLinkGeneration(device, currLinkGen);
 }
 
+nvmlReturn_t (*nvmlDeviceGetMaxPcieLinkGenerationFunc)(nvmlDevice_t device, unsigned int *maxLinkGen);
+nvmlReturn_t nvmlDeviceGetMaxPcieLinkGeneration(nvmlDevice_t device, unsigned int *maxLinkGen) {
+  if (nvmlDeviceGetMaxPcieLinkGenerationFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetMaxPcieLinkGeneration(device, maxLinkGen);
+}
+
+nvmlReturn_t (*nvmlDeviceGetMaxPcieLinkWidthFunc)(nvmlDevice_t device, unsigned int *maxLinkWidth);
+nvmlReturn_t nvmlDeviceGetMaxPcieLinkWidth(nvmlDevice_t device, unsigned int *maxLinkWidth) {
+  if (nvmlDeviceGetMaxPcieLinkWidthFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetMaxPcieLinkWidth(device, maxLinkWidth);
+}
+
 nvmlReturn_t (*nvmlDeviceGetCurrPcieLinkWidthFunc)(nvmlDevice_t device, unsigned int *currLinkWidth);
 nvmlReturn_t nvmlDeviceGetCurrPcieLinkWidth(nvmlDevice_t device, unsigned int *currLinkWidth) {
   if (nvmlDeviceGetCurrPcieLinkWidthFunc == NULL) {
@@ -267,6 +283,14 @@ nvmlReturn_t nvmlInit_dl(void) {
   }
   nvmlDeviceGetCurrPcieLinkGenerationFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrPcieLinkGeneration");
   if (nvmlDeviceGetCurrPcieLinkGenerationFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceGetMaxPcieLinkGenerationFunc = dlsym(nvmlHandle, "nvmlDeviceGetMaxPcieLinkGeneration");
+  if (nvmlDeviceGetMaxPcieLinkGenerationFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceGetMaxPcieLinkWidthFunc = dlsym(nvmlHandle, "nvmlDeviceGetMaxPcieLinkWidth");
+  if (nvmlDeviceGetMaxPcieLinkWidthFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlDeviceGetCurrPcieLinkWidthFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrPcieLinkWidth");
@@ -620,6 +644,26 @@ func (d Device) PcieGeneration() (uint, error) {
 	}
 	var n C.uint
 	r := C.nvmlDeviceGetCurrPcieLinkGeneration(d.dev, &n)
+	return uint(n), errorString(r)
+}
+
+// PcieMaxGeneration returns the current PCIe link generation
+func (d Device) PcieMaxGeneration() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var n C.uint
+	r := C.nvmlDeviceGetMaxPcieLinkGeneration(d.dev, &n)
+	return uint(n), errorString(r)
+}
+
+// PcieMaxWidth returns the current PCIe link width
+func (d Device) PcieMaxWidth() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var n C.uint
+	r := C.nvmlDeviceGetMaxPcieLinkWidth(d.dev, &n)
 	return uint(n), errorString(r)
 }
 
