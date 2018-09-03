@@ -119,6 +119,14 @@ nvmlReturn_t nvmlDeviceGetComputeMode(nvmlDevice_t device, nvmlComputeMode_t *mo
   return nvmlDeviceGetComputeModeFunc(device, mode);
 }
 
+nvmlReturn_t (*nvmlDeviceSetComputeModeFunc)(nvmlDevice_t device, nvmlComputeMode_t mode);
+nvmlReturn_t nvmlDeviceSetComputeMode(nvmlDevice_t device, nvmlComputeMode_t mode) {
+  if (nvmlDeviceSetComputeModeFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceSetComputeModeFunc(device, mode);
+}
+
 nvmlReturn_t (*nvmlDeviceGetPerformanceStateFunc)(nvmlDevice_t device, nvmlPstates_t *pstate);
 nvmlReturn_t nvmlDeviceGetPerformanceState(nvmlDevice_t device, nvmlPstates_t *pstate) {
   if (nvmlDeviceGetPerformanceStateFunc == NULL) {
@@ -299,6 +307,10 @@ nvmlReturn_t nvmlInit_dl(void) {
   }
   nvmlDeviceGetComputeModeFunc = dlsym(nvmlHandle, "nvmlDeviceGetComputeMode");
   if (nvmlDeviceGetComputeModeFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceSetComputeModeFunc = dlsym(nvmlHandle, "nvmlDeviceSetComputeMode");
+  if (nvmlDeviceSetComputeModeFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlDeviceGetPerformanceStateFunc = dlsym(nvmlHandle, "nvmlDeviceGetPerformanceState");
@@ -606,6 +618,15 @@ func (d Device) ComputeMode() (uint, error) {
 	var cm C.nvmlComputeMode_t
 	r := C.nvmlDeviceGetComputeMode(d.dev, &cm)
 	return uint(cm), errorString(r)
+}
+
+// SetComputeMode sets the current compute mode of the device.
+func (d Device) SetComputeMode(mode uint) error {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	r := C.nvmlDeviceSetComputeMode(d.dev, C.nvmlComputeMode_t(mode))
+	return errorString(r)
 }
 
 // PerformanceState returns the current compute mode of the device.
