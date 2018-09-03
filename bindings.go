@@ -111,6 +111,14 @@ nvmlReturn_t nvmlDeviceGetComputeMode(nvmlDevice_t device, nvmlComputeMode_t *mo
   return nvmlDeviceGetComputeModeFunc(device, mode);
 }
 
+nvmlReturn_t (*nvmlDeviceGetPerformanceStateFunc)(nvmlDevice_t device, nvmlPstates_t *pstate);
+nvmlReturn_t nvmlDeviceGetPerformanceState(nvmlDevice_t device, nvmlPstates_t *pstate) {
+  if (nvmlDeviceGetPerformanceStateFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetPerformanceStateFunc(device, pstate);
+}
+
 nvmlReturn_t (*nvmlDeviceGetClockInfoFunc)(nvmlDevice_t device, nvmlClockType_t clockType, unsigned int* clockMHz);
 nvmlReturn_t nvmlDeviceGetClockInfo(nvmlDevice_t device, nvmlClockType_t clockType, unsigned int* clockMHz) {
   if (nvmlDeviceGetClockInfoFunc == NULL) {
@@ -271,6 +279,10 @@ nvmlReturn_t nvmlInit_dl(void) {
   }
   nvmlDeviceGetComputeModeFunc = dlsym(nvmlHandle, "nvmlDeviceGetComputeMode");
   if (nvmlDeviceGetComputeModeFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceGetPerformanceStateFunc = dlsym(nvmlHandle, "nvmlDeviceGetPerformanceState");
+  if (nvmlDeviceGetPerformanceStateFunc== NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlDeviceGetClockInfoFunc = dlsym(nvmlHandle, "nvmlDeviceGetClockInfo");
@@ -559,6 +571,16 @@ func (d Device) ComputeMode() (uint, error) {
 	var cm C.nvmlComputeMode_t
 	r := C.nvmlDeviceGetComputeMode(d.dev, &cm)
 	return uint(cm), errorString(r)
+}
+
+// PerformanceState returns the current compute mode of the device.
+func (d Device) PerformanceState() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var pstate C.nvmlPstates_t
+	r := C.nvmlDeviceGetPerformanceState(d.dev, &pstate)
+	return uint(pstate), errorString(r)
 }
 
 // GrClock returns the application graphics clock of the device.
