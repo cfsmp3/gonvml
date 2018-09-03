@@ -623,7 +623,7 @@ func (d Device) ComputeMode() (uint, error) {
 // SetComputeMode sets the current compute mode of the device.
 func (d Device) SetComputeMode(mode uint) error {
 	if C.nvmlHandle == nil {
-		return 0, errLibraryNotLoaded
+		return errLibraryNotLoaded
 	}
 	r := C.nvmlDeviceSetComputeMode(d.dev, C.nvmlComputeMode_t(mode))
 	return errorString(r)
