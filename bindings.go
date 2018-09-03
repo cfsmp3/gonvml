@@ -159,12 +159,28 @@ nvmlReturn_t nvmlDeviceGetPowerUsage(nvmlDevice_t device, unsigned int *power) {
   return nvmlDeviceGetPowerUsageFunc(device, power);
 }
 
+nvmlReturn_t (*nvmlDeviceGetPcieThroughputFunc)(nvmlDevice_t device, nvmlPcieUtilCounter_t counter, unsigned int *value);
+nvmlReturn_t nvmlDeviceGetPcieThroughput(nvmlDevice_t device, nvmlPcieUtilCounter_t counter, unsigned int *value) {
+  if (nvmlDeviceGetPcieThroughputFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetPcieThroughput(device, counter, value);
+}
+
 nvmlReturn_t (*nvmlDeviceGetCurrPcieLinkGenerationFunc)(nvmlDevice_t device, unsigned int *currLinkGen);
 nvmlReturn_t nvmlDeviceGetCurrPcieLinkGeneration(nvmlDevice_t device, unsigned int *currLinkGen) {
   if (nvmlDeviceGetCurrPcieLinkGenerationFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   return nvmlDeviceGetCurrPcieLinkGeneration(device, currLinkGen);
+}
+
+nvmlReturn_t (*nvmlDeviceGetCurrPcieLinkWidthFunc)(nvmlDevice_t device, unsigned int *currLinkWidth);
+nvmlReturn_t nvmlDeviceGetCurrPcieLinkWidth(nvmlDevice_t device, unsigned int *currLinkWidth) {
+  if (nvmlDeviceGetCurrPcieLinkWidthFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetCurrPcieLinkWidth(device, currLinkWidth);
 }
 
 nvmlReturn_t (*nvmlDeviceGetMaxPcieLinkGenerationFunc)(nvmlDevice_t device, unsigned int *maxLinkGen);
@@ -181,14 +197,6 @@ nvmlReturn_t nvmlDeviceGetMaxPcieLinkWidth(nvmlDevice_t device, unsigned int *ma
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   return nvmlDeviceGetMaxPcieLinkWidth(device, maxLinkWidth);
-}
-
-nvmlReturn_t (*nvmlDeviceGetCurrPcieLinkWidthFunc)(nvmlDevice_t device, unsigned int *currLinkWidth);
-nvmlReturn_t nvmlDeviceGetCurrPcieLinkWidth(nvmlDevice_t device, unsigned int *currLinkWidth) {
-  if (nvmlDeviceGetCurrPcieLinkWidthFunc == NULL) {
-    return NVML_ERROR_FUNCTION_NOT_FOUND;
-  }
-  return nvmlDeviceGetCurrPcieLinkWidth(device, currLinkWidth);
 }
 
 nvmlReturn_t (*nvmlDeviceGetTemperatureFunc)(nvmlDevice_t device, nvmlTemperatureSensors_t sensorType, unsigned int *temp);
@@ -305,8 +313,16 @@ nvmlReturn_t nvmlInit_dl(void) {
   if (nvmlDeviceGetPowerUsageFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
+  nvmlDeviceGetPcieThroughputFunc = dlsym(nvmlHandle, "nvmlDeviceGetPcieThroughput");
+  if (nvmlDeviceGetPcieThroughputFunc== NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
   nvmlDeviceGetCurrPcieLinkGenerationFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrPcieLinkGeneration");
   if (nvmlDeviceGetCurrPcieLinkGenerationFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceGetCurrPcieLinkWidthFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrPcieLinkWidth");
+  if (nvmlDeviceGetCurrPcieLinkWidthFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlDeviceGetMaxPcieLinkGenerationFunc = dlsym(nvmlHandle, "nvmlDeviceGetMaxPcieLinkGeneration");
@@ -315,10 +331,6 @@ nvmlReturn_t nvmlInit_dl(void) {
   }
   nvmlDeviceGetMaxPcieLinkWidthFunc = dlsym(nvmlHandle, "nvmlDeviceGetMaxPcieLinkWidth");
   if (nvmlDeviceGetMaxPcieLinkWidthFunc == NULL) {
-    return NVML_ERROR_FUNCTION_NOT_FOUND;
-  }
-  nvmlDeviceGetCurrPcieLinkWidthFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrPcieLinkWidth");
-  if (nvmlDeviceGetCurrPcieLinkWidthFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlDeviceGetTemperatureFunc = dlsym(nvmlHandle, "nvmlDeviceGetTemperature");
@@ -442,6 +454,8 @@ const (
 	ctGraphics = C.NVML_CLOCK_GRAPHICS
 	ctSM       = C.NVML_CLOCK_SM
 	ctMemory   = C.NVML_CLOCK_MEM
+	pcieUtilTx = C.NVML_PCIE_UTIL_TX_BYTES
+	pcieUtilRx = C.NVML_PCIE_UTIL_RX_BYTES
 )
 
 var errLibraryNotLoaded = errors.New("could not load NVML library")
@@ -701,6 +715,26 @@ func (d Device) AverageGPUUtilization(since time.Duration) (uint, error) {
 	return uint(n), errorString(r)
 }
 
+// PcieTxThroughput returns the tx throughput in KB/s
+func (d Device) PcieTxThroughput() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var n C.uint
+	r := C.nvmlDeviceGetPcieThroughput(d.dev, pcieUtilTx, &n)
+	return uint(n), errorString(r)
+}
+
+// PcieRxThroughput returns the rx throughput in KB/s
+func (d Device) PcieRxThroughput() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var n C.uint
+	r := C.nvmlDeviceGetPcieThroughput(d.dev, pcieUtilRx, &n)
+	return uint(n), errorString(r)
+}
+
 // PcieGeneration returns the current PCIe link generation
 func (d Device) PcieGeneration() (uint, error) {
 	if C.nvmlHandle == nil {
@@ -708,6 +742,16 @@ func (d Device) PcieGeneration() (uint, error) {
 	}
 	var n C.uint
 	r := C.nvmlDeviceGetCurrPcieLinkGeneration(d.dev, &n)
+	return uint(n), errorString(r)
+}
+
+// PcieWidth returns the current PCIe link width
+func (d Device) PcieWidth() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var n C.uint
+	r := C.nvmlDeviceGetCurrPcieLinkWidth(d.dev, &n)
 	return uint(n), errorString(r)
 }
 
@@ -728,16 +772,6 @@ func (d Device) PcieMaxWidth() (uint, error) {
 	}
 	var n C.uint
 	r := C.nvmlDeviceGetMaxPcieLinkWidth(d.dev, &n)
-	return uint(n), errorString(r)
-}
-
-// PcieWidth returns the current PCIe link width
-func (d Device) PcieWidth() (uint, error) {
-	if C.nvmlHandle == nil {
-		return 0, errLibraryNotLoaded
-	}
-	var n C.uint
-	r := C.nvmlDeviceGetCurrPcieLinkWidth(d.dev, &n)
 	return uint(n), errorString(r)
 }
 
