@@ -119,6 +119,14 @@ nvmlReturn_t nvmlDeviceGetClockInfo(nvmlDevice_t device, nvmlClockType_t clockTy
   return nvmlDeviceGetClockInfoFunc(device, clockType, clockMHz);
 }
 
+nvmlReturn_t (*nvmlDeviceGetMaxClockInfoFunc)(nvmlDevice_t device, nvmlClockType_t clockType, unsigned int* clockMHz);
+nvmlReturn_t nvmlDeviceGetMaxClockInfo(nvmlDevice_t device, nvmlClockType_t clockType, unsigned int* clockMHz) {
+  if (nvmlDeviceGetMaxClockInfoFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetMaxClockInfoFunc(device, clockType, clockMHz);
+}
+
 nvmlReturn_t (*nvmlDeviceGetMemoryInfoFunc)(nvmlDevice_t device, nvmlMemory_t *memory);
 nvmlReturn_t nvmlDeviceGetMemoryInfo(nvmlDevice_t device, nvmlMemory_t *memory) {
   if (nvmlDeviceGetMemoryInfoFunc == NULL) {
@@ -267,6 +275,10 @@ nvmlReturn_t nvmlInit_dl(void) {
   }
   nvmlDeviceGetClockInfoFunc = dlsym(nvmlHandle, "nvmlDeviceGetClockInfo");
   if (nvmlDeviceGetClockInfoFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceGetMaxClockInfoFunc = dlsym(nvmlHandle, "nvmlDeviceGetMaxClockInfo");
+  if (nvmlDeviceGetMaxClockInfoFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlDeviceGetMemoryInfoFunc = dlsym(nvmlHandle, "nvmlDeviceGetMemoryInfo");
@@ -576,6 +588,36 @@ func (d Device) MemClock() (uint, error) {
 	}
 	var clockMHz C.uint
 	r := C.nvmlDeviceGetClockInfo(d.dev, ctMemory, &clockMHz)
+	return uint(clockMHz), errorString(r)
+}
+
+// GrMaxClock returns the application graphics clock of the device.
+func (d Device) GrMaxClock() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var clockMHz C.uint
+	r := C.nvmlDeviceGetMaxClockInfo(d.dev, ctGraphics, &clockMHz)
+	return uint(clockMHz), errorString(r)
+}
+
+// SMMaxClock returns the application SM clock of the device.
+func (d Device) SMMaxClock() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var clockMHz C.uint
+	r := C.nvmlDeviceGetMaxClockInfo(d.dev, ctSM, &clockMHz)
+	return uint(clockMHz), errorString(r)
+}
+
+// MemMaxClock returns the application memory clock of the device.
+func (d Device) MemMaxClock() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var clockMHz C.uint
+	r := C.nvmlDeviceGetMaxClockInfo(d.dev, ctMemory, &clockMHz)
 	return uint(clockMHz), errorString(r)
 }
 
