@@ -175,6 +175,22 @@ nvmlReturn_t nvmlDeviceGetPowerUsage(nvmlDevice_t device, unsigned int *power) {
   return nvmlDeviceGetPowerUsageFunc(device, power);
 }
 
+nvmlReturn_t (*nvmlDeviceGetPowerManagementLimitFunc)(nvmlDevice_t device, unsigned int *limit);
+nvmlReturn_t nvmlDeviceGetPowerManagementLimit(nvmlDevice_t device, unsigned int *limit) {
+  if (nvmlDeviceGetPowerManagementLimitFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetPowerManagementLimitFunc(device, limit);
+}
+
+nvmlReturn_t (*nvmlDeviceGetPowerManagementDefaultLimitFunc)(nvmlDevice_t device, unsigned int *defaultLimit);
+nvmlReturn_t nvmlDeviceGetPowerManagementDefaultLimit(nvmlDevice_t device, unsigned int *defaultLimit) {
+  if (nvmlDeviceGetPowerManagementDefaultLimitFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetPowerManagementDefaultLimitFunc(device, defaultLimit);
+}
+
 nvmlReturn_t (*nvmlDeviceGetPcieThroughputFunc)(nvmlDevice_t device, nvmlPcieUtilCounter_t counter, unsigned int *value);
 nvmlReturn_t nvmlDeviceGetPcieThroughput(nvmlDevice_t device, nvmlPcieUtilCounter_t counter, unsigned int *value) {
   if (nvmlDeviceGetPcieThroughputFunc == NULL) {
@@ -335,6 +351,14 @@ nvmlReturn_t nvmlInit_dl(void) {
   }
   nvmlDeviceGetPowerUsageFunc = dlsym(nvmlHandle, "nvmlDeviceGetPowerUsage");
   if (nvmlDeviceGetPowerUsageFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceGetPowerManagementLimitFunc = dlsym(nvmlHandle, "nvmlDeviceGetPowerManagementLimit");
+  if (nvmlDeviceGetPowerManagementLimitFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceGetPowerManagementDefaultLimitFunc = dlsym(nvmlHandle, "nvmlDeviceGetPowerManagementDefaultLimit");
+  if (nvmlDeviceGetPowerManagementDefaultLimitFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlDeviceGetPcieThroughputFunc = dlsym(nvmlHandle, "nvmlDeviceGetPcieThroughput");
@@ -741,6 +765,28 @@ func (d Device) AveragePowerUsage(since time.Duration) (uint, error) {
 	lastTs := C.ulonglong(time.Now().Add(-1*since).UnixNano() / 1000)
 	var n C.uint
 	r := C.nvmlDeviceGetAverageUsage(d.dev, C.NVML_TOTAL_POWER_SAMPLES, lastTs, &n)
+	return uint(n), errorString(r)
+}
+
+// PowerLimit returns the power limit for this GPU and its associated circuitry
+// in milliwatts
+func (d Device) PowerLimit() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var n C.uint
+	r := C.nvmlDeviceGetPowerManagementLimit(d.dev, &n)
+	return uint(n), errorString(r)
+}
+
+// DefaultPowerLimit returns the power limit for this GPU and its associated circuitry
+// in milliwatts
+func (d Device) DefaultPowerLimit() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var n C.uint
+	r := C.nvmlDeviceGetPowerManagementDefaultLimit(d.dev, &n)
 	return uint(n), errorString(r)
 }
 
