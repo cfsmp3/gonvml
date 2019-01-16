@@ -47,12 +47,28 @@ nvmlReturn_t nvmlSystemGetDriverVersion(char *version, unsigned int length) {
   return nvmlSystemGetDriverVersionFunc(version, length);
 }
 
+nvmlReturn_t (*nvmlSystemGetNVMLVersionFunc)(char *version, unsigned int length);
+nvmlReturn_t nvmlSystemGetNVMLVersion(char *version, unsigned int length) {
+  if (nvmlSystemGetNVMLVersionFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlSystemGetDriverVersionFunc(version, length);
+}
+
 nvmlReturn_t (*nvmlDeviceGetCountFunc)(unsigned int *deviceCount);
 nvmlReturn_t nvmlDeviceGetCount(unsigned int *deviceCount) {
   if (nvmlDeviceGetCountFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   return nvmlDeviceGetCountFunc(deviceCount);
+}
+
+nvmlReturn_t (*nvmlDeviceGetBrandFunc)(nvmlDevice_t device, nvmlBrandType_t *type);
+nvmlReturn_t nvmlDeviceGetBrand(nvmlDevice_t device, nvmlBrandType_t *type) {
+	if(nvmlDeviceGetBrandFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetBrandFunc(device, type);
 }
 
 nvmlReturn_t (*nvmlDeviceGetHandleByIndexFunc)(unsigned int index, nvmlDevice_t *device);
@@ -169,10 +185,18 @@ nvmlReturn_t nvmlInit_dl(void) {
   if (nvmlSystemGetDriverVersionFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
+	nvmlSystemGetNVMLVersionFunc = dlsym(nvmlHandle, "nvmlSystemGetNVMLVersion");
+	if(nvmlSystemGetNVMLVersionFunc == NULL){
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
   nvmlDeviceGetCountFunc = dlsym(nvmlHandle, "nvmlDeviceGetCount_v2");
   if (nvmlDeviceGetCountFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
+	nvmlDeviceGetBrandFunc = dlsym(nvmlHandle, "nvmlDeviceGetBrand");
+	if(nvmlDeviceGetBrandFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
   nvmlDeviceGetHandleByIndexFunc = dlsym(nvmlHandle, "nvmlDeviceGetHandleByIndex_v2");
   if (nvmlDeviceGetHandleByIndexFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
@@ -316,6 +340,7 @@ import (
 )
 
 const (
+	szNVML   = C.NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE
 	szDriver = C.NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE
 	szName   = C.NVML_DEVICE_NAME_BUFFER_SIZE
 	szUUID   = C.NVML_DEVICE_UUID_BUFFER_SIZE
@@ -360,6 +385,15 @@ func SystemDriverVersion() (string, error) {
 	return C.GoString(&driver[0]), errorString(r)
 }
 
+func SystemNVMLVersion() (string, error) {
+	if C.nvmlHandle == nil {
+		return "", errLibraryNotLoaded
+	}
+	var nvml [szNVML]C.char
+	r := C.nvmlSystemGetNVMLVersion(&nvml[0], szNVML)
+	return C.GoString(&nvml[0]), errorString(r)
+}
+
 // DeviceCount returns the number of nvidia devices on the system.
 func DeviceCount() (uint, error) {
 	if C.nvmlHandle == nil {
@@ -376,6 +410,35 @@ type Device struct {
 	dev C.nvmlDevice_t
 }
 
+//DeviceBrand is the equivalent for nvmlBrandType_t.
+//It is needed to map the enumeration
+type DeviceBrand int
+
+//Enumeration constants for DeviceBrand
+const (
+	DeviceBrandUnknown DeviceBrand = C.NVML_BRAND_UNKNOWN
+	DeviceBrandTesla   DeviceBrand = C.NVML_BRAND_TESLA
+	DeviceBrandNVS     DeviceBrand = C.NVML_BRAND_NVS
+	DeviceBrandGRID    DeviceBrand = C.NVML_BRAND_GRID
+	DeviceBrandGeForce DeviceBrand = C.NVML_BRAND_GEFORCE
+	DeviceBrandCount   DeviceBrand = C.NVML_BRAND_COUNT
+)
+
+func (b DeviceBrand) String() string {
+	switch b {
+	case DeviceBrandTesla:
+		return "Tesla"
+	case DeviceBrandNVS:
+		return "NVS"
+	case DeviceBrandGRID:
+		return "GRID"
+	case DeviceBrandGeForce:
+		return "Geforce"
+	default:
+		return "Unknown"
+	}
+}
+
 // DeviceHandleByIndex returns the device handle for a particular index.
 // The indices range from 0 to DeviceCount()-1. The order in which NVML
 // enumerates devices has no guarantees of consistency between reboots.
@@ -386,6 +449,16 @@ func DeviceHandleByIndex(idx uint) (Device, error) {
 	var dev C.nvmlDevice_t
 	r := C.nvmlDeviceGetHandleByIndex(C.uint(idx), &dev)
 	return Device{dev}, errorString(r)
+}
+
+//Brand returns the Product Brand of the device.
+func (d Device) Brand() (DeviceBrand, error) {
+	if C.nvmlHandle == nil {
+		return DeviceBrandUnknown, errLibraryNotLoaded
+	}
+	var brand C.nvmlBrandType_t
+	r := C.nvmlDeviceGetBrand(d.dev, &brand)
+	return DeviceBrand(brand), errorString(r)
 }
 
 // MinorNumber returns the minor number for the device.
