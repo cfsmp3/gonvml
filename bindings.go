@@ -63,6 +63,14 @@ nvmlReturn_t nvmlDeviceGetCount(unsigned int *deviceCount) {
   return nvmlDeviceGetCountFunc(deviceCount);
 }
 
+nvmlReturn_t (*nvmlDeviceGetHandleByIndexFunc)(unsigned int index, nvmlDevice_t *device);
+nvmlReturn_t nvmlDeviceGetHandleByIndex(unsigned int index, nvmlDevice_t *device) {
+  if (nvmlDeviceGetHandleByIndexFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetHandleByIndexFunc(index, device);
+}
+
 nvmlReturn_t (*nvmlDeviceGetBrandFunc)(nvmlDevice_t device, nvmlBrandType_t *type);
 nvmlReturn_t nvmlDeviceGetBrand(nvmlDevice_t device, nvmlBrandType_t *type) {
 	if(nvmlDeviceGetBrandFunc == NULL) {
@@ -71,12 +79,12 @@ nvmlReturn_t nvmlDeviceGetBrand(nvmlDevice_t device, nvmlBrandType_t *type) {
 	return nvmlDeviceGetBrandFunc(device, type);
 }
 
-nvmlReturn_t (*nvmlDeviceGetHandleByIndexFunc)(unsigned int index, nvmlDevice_t *device);
-nvmlReturn_t nvmlDeviceGetHandleByIndex(unsigned int index, nvmlDevice_t *device) {
-  if (nvmlDeviceGetHandleByIndexFunc == NULL) {
-    return NVML_ERROR_FUNCTION_NOT_FOUND;
-  }
-  return nvmlDeviceGetHandleByIndexFunc(index, device);
+nvmlReturn_t (*nvmlDeviceGetBoardIdFunc)(nvmlDevice_t device, unsigned int* boardId);
+nvmlReturn_t nvmlDeviceGetBoardId(nvmlDevice_t device, unsigned int* boardId) {
+	if(nvmlDeviceGetBoardIdFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetBoardIdFunc(device, boardId);
 }
 
 nvmlReturn_t (*nvmlDeviceGetMinorNumberFunc)(nvmlDevice_t device, unsigned int *minorNumber);
@@ -195,6 +203,10 @@ nvmlReturn_t nvmlInit_dl(void) {
   }
 	nvmlDeviceGetBrandFunc = dlsym(nvmlHandle, "nvmlDeviceGetBrand");
 	if(nvmlDeviceGetBrandFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	nvmlDeviceGetBoardIdFunc = dlsym(nvmlHandle, "nvmlDeviceGetBoardId");
+	if(nvmlDeviceGetBoardIdFunc == NULL) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
 	}
   nvmlDeviceGetHandleByIndexFunc = dlsym(nvmlHandle, "nvmlDeviceGetHandleByIndex_v2");
@@ -385,6 +397,7 @@ func SystemDriverVersion() (string, error) {
 	return C.GoString(&driver[0]), errorString(r)
 }
 
+// SystemNVMLVersion returns the NVML Library Version being used.
 func SystemNVMLVersion() (string, error) {
 	if C.nvmlHandle == nil {
 		return "", errLibraryNotLoaded
@@ -459,6 +472,17 @@ func (d Device) Brand() (DeviceBrand, error) {
 	var brand C.nvmlBrandType_t
 	r := C.nvmlDeviceGetBrand(d.dev, &brand)
 	return DeviceBrand(brand), errorString(r)
+}
+
+//BoardID returns the Devices Board ID.
+//Devices with the same boardId indicate GPUs connected to the same PLX.
+func (d Device) BoardID() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var boardid C.uint
+	r := C.nvmlDeviceGetBoardId(d.dev, &boardid)
+	return uint(boardid), errorString(r)
 }
 
 // MinorNumber returns the minor number for the device.
