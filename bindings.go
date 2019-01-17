@@ -128,6 +128,14 @@ nvmlReturn_t nvmlDeviceGetVbiosVersion (nvmlDevice_t device, char* version, unsi
 	return nvmlDeviceGetVbiosVersionFunc(device, version, length);
 }
 
+nvmlReturn_t (*nvmlDeviceGetBAR1MemoryInfoFunc)(nvmlDevice_t device, nvmlBAR1Memory_t* bar1Memory);
+nvmlReturn_t nvmlDeviceGetBAR1MemoryInfo(nvmlDevice_t device, nvmlBAR1Memory_t* bar1Memory) {
+	if(nvmlDeviceGetVbiosVersionFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetBAR1MemoryInfoFunc(device, bar1Memory);
+}
+
 nvmlReturn_t (*nvmlDeviceGetMinorNumberFunc)(nvmlDevice_t device, unsigned int *minorNumber);
 nvmlReturn_t nvmlDeviceGetMinorNumber(nvmlDevice_t device, unsigned int *minorNumber) {
   if (nvmlDeviceGetMinorNumberFunc == NULL) {
@@ -284,6 +292,10 @@ nvmlReturn_t nvmlInit_dl(void) {
 	}
 	nvmlDeviceGetSerialFunc = dlsym(nvmlHandle, "nvmlDeviceGetSerial");
 	if(nvmlDeviceGetSerialFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	nvmlDeviceGetBAR1MemoryInfoFunc = dlsym(nvmlHandle, "nvmlDeviceGetBAR1MemoryInfo");
+	if(nvmlDeviceGetBAR1MemoryInfoFunc == NULL) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
 	}
   nvmlDeviceGetMinorNumberFunc = dlsym(nvmlHandle, "nvmlDeviceGetMinorNumber");
@@ -459,7 +471,7 @@ func errorString(ret C.nvmlReturn_t) error {
 		return errLibraryNotLoaded
 	}
 	err := C.GoString(C.nvmlErrorString(ret))
-	return fmt.Errorf("nvml: %v", err)
+	return fmt.Errorf("NVML: %v", err)
 }
 
 // SystemDriverVersion returns the the driver version on the system.
@@ -706,6 +718,18 @@ func (d Device) MemoryInfo() (uint64, uint64, error) {
 	var memory C.nvmlMemory_t
 	r := C.nvmlDeviceGetMemoryInfo(d.dev, &memory)
 	return uint64(memory.total), uint64(memory.used), errorString(r)
+}
+
+// Bar1MemoryInfo returns the total and used memory (in bytes) of the devices BAR1 Memory.
+//BAR1 is used to map the FB (device memory) so that it can be directly accessed by
+//the CPU or by 3rd party devices (peer-to-peer on the PCIE bus).
+func (d Device) Bar1MemoryInfo() (uint64, uint64, error) {
+	if C.nvmlHandle == nil {
+		return 0, 0, errLibraryNotLoaded
+	}
+	var bar1 C.nvmlBAR1Memory_t
+	r := C.nvmlDeviceGetBAR1MemoryInfo(d.dev, &bar1)
+	return uint64(bar1.bar1Total), uint64(bar1.bar1Used), errorString(r)
 }
 
 // UtilizationRates returns the percent of time over the past sample period during which:
