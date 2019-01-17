@@ -72,6 +72,14 @@ nvmlReturn_t nvmlDeviceGetHandleByIndex(unsigned int index, nvmlDevice_t *device
   return nvmlDeviceGetHandleByIndexFunc(index, device);
 }
 
+nvmlReturn_t (*nvmlDeviceGetIndexFunc)(nvmlDevice_t device, unsigned int* index);
+nvmlReturn_t nvmlDeviceGetIndex(nvmlDevice_t device, unsigned int* index){
+	if(nvmlDeviceGetIndexFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetIndexFunc(device, index);
+}
+
 nvmlReturn_t (*nvmlDeviceGetBrandFunc)(nvmlDevice_t device, nvmlBrandType_t *type);
 nvmlReturn_t nvmlDeviceGetBrand(nvmlDevice_t device, nvmlBrandType_t *type) {
 	if(nvmlDeviceGetBrandFunc == NULL) {
@@ -96,7 +104,7 @@ nvmlReturn_t nvmlDeviceGetComputeMode(nvmlDevice_t device, nvmlComputeMode_t* mo
 	return nvmlDeviceGetComputeModeFunc(device, mode);
 }
 
-nvmlReturn_t (*nvmlDeviceGetDisplayModeFunc) (nvmlDevice_t device, nvmlEnableState_t* display);
+nvmlReturn_t (*nvmlDeviceGetDisplayModeFunc)(nvmlDevice_t device, nvmlEnableState_t* display);
 nvmlReturn_t nvmlDeviceGetDisplayMode(nvmlDevice_t device, nvmlEnableState_t* display) {
 	if(nvmlDeviceGetComputeModeFunc == NULL) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
@@ -104,12 +112,20 @@ nvmlReturn_t nvmlDeviceGetDisplayMode(nvmlDevice_t device, nvmlEnableState_t* di
 	return nvmlDeviceGetDisplayModeFunc(device, display);
 }
 
-nvmlReturn_t (*nvmlDeviceGetDisplayActiveFunc) (nvmlDevice_t device, nvmlEnableState_t* display);
+nvmlReturn_t (*nvmlDeviceGetDisplayActiveFunc)(nvmlDevice_t device, nvmlEnableState_t* display);
 nvmlReturn_t nvmlDeviceGetDisplayActive(nvmlDevice_t device, nvmlEnableState_t* display) {
 	if(nvmlDeviceGetComputeModeFunc == NULL) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
 	}
 	return nvmlDeviceGetDisplayActiveFunc(device, display);
+}
+
+nvmlReturn_t (*nvmlDeviceGetVbiosVersionFunc)(nvmlDevice_t device, char* version, unsigned int  length);
+nvmlReturn_t nvmlDeviceGetVbiosVersion (nvmlDevice_t device, char* version, unsigned int  length) {
+	if(nvmlDeviceGetVbiosVersionFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetVbiosVersionFunc(device, version, length);
 }
 
 nvmlReturn_t (*nvmlDeviceGetMinorNumberFunc)(nvmlDevice_t device, unsigned int *minorNumber);
@@ -126,6 +142,14 @@ nvmlReturn_t nvmlDeviceGetUUID(nvmlDevice_t device, char *uuid, unsigned int len
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   return nvmlDeviceGetUUIDFunc(device, uuid, length);
+}
+
+nvmlReturn_t (*nvmlDeviceGetSerialFunc)(nvmlDevice_t device, char* serial, unsigned int  length);
+nvmlReturn_t nvmlDeviceGetSerial(nvmlDevice_t device, char* serial, unsigned int  length){
+	if (nvmlDeviceGetSerialFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetSerialFunc(device, serial, length);
 }
 
 nvmlReturn_t (*nvmlDeviceGetNameFunc)(nvmlDevice_t device, char *name, unsigned int length);
@@ -214,6 +238,14 @@ nvmlReturn_t nvmlInit_dl(void) {
   if (nvmlErrorStringFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
+  nvmlDeviceGetHandleByIndexFunc = dlsym(nvmlHandle, "nvmlDeviceGetHandleByIndex_v2");
+  if (nvmlDeviceGetHandleByIndexFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+	nvmlDeviceGetIndexFunc = dlsym(nvmlHandle, "nvmlDeviceGetIndex");
+	if (nvmlDeviceGetIndexFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
   nvmlSystemGetDriverVersionFunc = dlsym(nvmlHandle, "nvmlSystemGetDriverVersion");
   if (nvmlSystemGetDriverVersionFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
@@ -246,10 +278,14 @@ nvmlReturn_t nvmlInit_dl(void) {
 	if(nvmlDeviceGetDisplayActiveFunc == NULL) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
 	}
-  nvmlDeviceGetHandleByIndexFunc = dlsym(nvmlHandle, "nvmlDeviceGetHandleByIndex_v2");
-  if (nvmlDeviceGetHandleByIndexFunc == NULL) {
-    return NVML_ERROR_FUNCTION_NOT_FOUND;
-  }
+	nvmlDeviceGetVbiosVersionFunc = dlsym(nvmlHandle, "nvmlDeviceGetVbiosVersion");
+	if(nvmlDeviceGetDisplayActiveFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	nvmlDeviceGetSerialFunc = dlsym(nvmlHandle, "nvmlDeviceGetSerial");
+	if(nvmlDeviceGetSerialFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
   nvmlDeviceGetMinorNumberFunc = dlsym(nvmlHandle, "nvmlDeviceGetMinorNumber");
   if (nvmlDeviceGetMinorNumberFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
@@ -389,10 +425,12 @@ import (
 )
 
 const (
-	szNVML   = C.NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE
-	szDriver = C.NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE
-	szName   = C.NVML_DEVICE_NAME_BUFFER_SIZE
-	szUUID   = C.NVML_DEVICE_UUID_BUFFER_SIZE
+	szNVML         = C.NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE
+	szDriver       = C.NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE
+	szName         = C.NVML_DEVICE_NAME_BUFFER_SIZE
+	szUUID         = C.NVML_DEVICE_UUID_BUFFER_SIZE
+	szVBiosVersion = C.NVML_DEVICE_VBIOS_VERSION_BUFFER_SIZE
+	szDeviceSerial = C.NVML_DEVICE_SERIAL_BUFFER_SIZE
 )
 
 var errLibraryNotLoaded = errors.New("could not load NVML library")
@@ -547,6 +585,16 @@ func DeviceHandleByIndex(idx uint) (Device, error) {
 	return Device{dev}, errorString(r)
 }
 
+//Index return the index of the device
+func (d Device) Index() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var index C.uint
+	r := C.nvmlDeviceGetIndex(d.dev, &index)
+	return uint(index), errorString(r)
+}
+
 //Brand returns the Product Brand of the device.
 func (d Device) Brand() (DeviceBrand, error) {
 	if C.nvmlHandle == nil {
@@ -596,6 +644,26 @@ func (d Device) DisplayActive() (EnableState, error) {
 	var es C.nvmlEnableState_t
 	r := C.nvmlDeviceGetDisplayActive(d.dev, &es)
 	return EnableState(es), errorString(r)
+}
+
+//VBiosVersion returns VBIOS version of the device.
+func (d Device) VBiosVersion() (string, error) {
+	if C.nvmlHandle == nil {
+		return "", errLibraryNotLoaded
+	}
+	var version [szVBiosVersion]C.char
+	r := C.nvmlDeviceGetVbiosVersion(d.dev, &version[0], szVBiosVersion)
+	return C.GoString(&version[0]), errorString(r)
+}
+
+//Serial returns the globally unique board serial number associated with this device's board.
+func (d Device) Serial() (string, error) {
+	if C.nvmlHandle == nil {
+		return "", errLibraryNotLoaded
+	}
+	var serial [szDeviceSerial]C.char
+	r := C.nvmlDeviceGetSerial(d.dev, &serial[0], szDeviceSerial)
+	return C.GoString(&serial[0]), errorString(r)
 }
 
 // MinorNumber returns the minor number for the device.
