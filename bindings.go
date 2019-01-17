@@ -21,6 +21,7 @@ package gonvml
 #include <stddef.h>
 #include <dlfcn.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "nvml.h"
 
@@ -85,6 +86,14 @@ nvmlReturn_t nvmlDeviceGetBoardId(nvmlDevice_t device, unsigned int* boardId) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
 	}
 	return nvmlDeviceGetBoardIdFunc(device, boardId);
+}
+
+nvmlReturn_t (*nvmlDeviceGetComputeModeFunc)( nvmlDevice_t device, nvmlComputeMode_t* mode);
+nvmlReturn_t nvmlDeviceGetComputeMode( nvmlDevice_t device, nvmlComputeMode_t* mode) {
+	if(nvmlDeviceGetComputeModeFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetComputeModeFunc(device, mode);
 }
 
 nvmlReturn_t (*nvmlDeviceGetMinorNumberFunc)(nvmlDevice_t device, unsigned int *minorNumber);
@@ -207,6 +216,10 @@ nvmlReturn_t nvmlInit_dl(void) {
 	}
 	nvmlDeviceGetBoardIdFunc = dlsym(nvmlHandle, "nvmlDeviceGetBoardId");
 	if(nvmlDeviceGetBoardIdFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	nvmlDeviceGetComputeModeFunc = dlsym(nvmlHandle, "nvmlDeviceGetComputeMode");
+	if(nvmlDeviceGetComputeModeFunc == NULL) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
 	}
   nvmlDeviceGetHandleByIndexFunc = dlsym(nvmlHandle, "nvmlDeviceGetHandleByIndex_v2");
@@ -424,10 +437,9 @@ type Device struct {
 }
 
 //DeviceBrand is the equivalent for nvmlBrandType_t.
-//It is needed to map the enumeration
 type DeviceBrand int
 
-//Enumeration constants for DeviceBrand
+//Enumeration mapping for DeviceBrand to nvmlBrandType_t
 const (
 	DeviceBrandUnknown DeviceBrand = C.NVML_BRAND_UNKNOWN
 	DeviceBrandTesla   DeviceBrand = C.NVML_BRAND_TESLA
@@ -449,6 +461,33 @@ func (b DeviceBrand) String() string {
 		return "Geforce"
 	default:
 		return "Unknown"
+	}
+}
+
+//ComputeMode is the quivalent for nvmlComputeMode_t.
+type ComputeMode int
+
+//Enumeration mapping for ComputeMode to nvmlComputeMode_t
+const (
+	ComputeModeDefault          ComputeMode = C.NVML_COMPUTEMODE_DEFAULT
+	ComputeModeExclusiveThread  ComputeMode = C.NVML_COMPUTEMODE_EXCLUSIVE_THREAD
+	ComputeModeProhibited       ComputeMode = C.NVML_COMPUTEMODE_PROHIBITED
+	ComputeModeExclusiveProcess ComputeMode = C.NVML_COMPUTEMODE_EXCLUSIVE_PROCESS
+	ComputeModeCount            ComputeMode = C.NVML_COMPUTEMODE_COUNT
+)
+
+func (cm ComputeMode) String() string {
+	switch cm {
+	case ComputeModeProhibited:
+		return "prohibited"
+	case ComputeModeExclusiveThread:
+		return "exclusive thread"
+	case ComputeModeExclusiveProcess:
+		return "exclusive process"
+	case ComputeModeDefault:
+		return "default"
+	default:
+		return "Unkown"
 	}
 }
 
@@ -483,6 +522,16 @@ func (d Device) BoardID() (uint, error) {
 	var boardid C.uint
 	r := C.nvmlDeviceGetBoardId(d.dev, &boardid)
 	return uint(boardid), errorString(r)
+}
+
+//ComputeMode returns the current Compute Mode of the Device
+func (d Device) ComputeMode() (ComputeMode, error) {
+	if C.nvmlHandle == nil {
+		return ComputeModeDefault, errLibraryNotLoaded
+	}
+	var cm C.nvmlComputeMode_t
+	r := C.nvmlDeviceGetComputeMode(d.dev, &cm)
+	return ComputeMode(cm), errorString(r)
 }
 
 // MinorNumber returns the minor number for the device.
