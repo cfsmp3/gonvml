@@ -89,11 +89,27 @@ nvmlReturn_t nvmlDeviceGetBoardId(nvmlDevice_t device, unsigned int* boardId) {
 }
 
 nvmlReturn_t (*nvmlDeviceGetComputeModeFunc)( nvmlDevice_t device, nvmlComputeMode_t* mode);
-nvmlReturn_t nvmlDeviceGetComputeMode( nvmlDevice_t device, nvmlComputeMode_t* mode) {
+nvmlReturn_t nvmlDeviceGetComputeMode(nvmlDevice_t device, nvmlComputeMode_t* mode) {
 	if(nvmlDeviceGetComputeModeFunc == NULL) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
 	}
 	return nvmlDeviceGetComputeModeFunc(device, mode);
+}
+
+nvmlReturn_t (*nvmlDeviceGetDisplayModeFunc) (nvmlDevice_t device, nvmlEnableState_t* display);
+nvmlReturn_t nvmlDeviceGetDisplayMode(nvmlDevice_t device, nvmlEnableState_t* display) {
+	if(nvmlDeviceGetComputeModeFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetDisplayModeFunc(device, display);
+}
+
+nvmlReturn_t (*nvmlDeviceGetDisplayActiveFunc) (nvmlDevice_t device, nvmlEnableState_t* display);
+nvmlReturn_t nvmlDeviceGetDisplayActive(nvmlDevice_t device, nvmlEnableState_t* display) {
+	if(nvmlDeviceGetComputeModeFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetDisplayActiveFunc(device, display);
 }
 
 nvmlReturn_t (*nvmlDeviceGetMinorNumberFunc)(nvmlDevice_t device, unsigned int *minorNumber);
@@ -220,6 +236,14 @@ nvmlReturn_t nvmlInit_dl(void) {
 	}
 	nvmlDeviceGetComputeModeFunc = dlsym(nvmlHandle, "nvmlDeviceGetComputeMode");
 	if(nvmlDeviceGetComputeModeFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	nvmlDeviceGetDisplayModeFunc = dlsym(nvmlHandle, "nvmlDeviceGetDisplayMode");
+	if(nvmlDeviceGetDisplayModeFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	nvmlDeviceGetDisplayActiveFunc = dlsym(nvmlHandle, "nvmlDeviceGetDisplayActive");
+	if(nvmlDeviceGetDisplayActiveFunc == NULL) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
 	}
   nvmlDeviceGetHandleByIndexFunc = dlsym(nvmlHandle, "nvmlDeviceGetHandleByIndex_v2");
@@ -460,7 +484,7 @@ func (b DeviceBrand) String() string {
 	case DeviceBrandGeForce:
 		return "Geforce"
 	default:
-		return "Unknown"
+		return "unknown"
 	}
 }
 
@@ -487,7 +511,27 @@ func (cm ComputeMode) String() string {
 	case ComputeModeDefault:
 		return "default"
 	default:
-		return "Unkown"
+		return "unkown"
+	}
+}
+
+//EnableState is the quivalent for nvmlEnableState_t.
+type EnableState int
+
+//Enumeration mapping for ComputeMode to nvmlComputeMode_t
+const (
+	EnableStateFeatureEnabled  EnableState = C.NVML_FEATURE_ENABLED
+	EnableStateFeatureDisabled EnableState = C.NVML_FEATURE_DISABLED
+)
+
+func (es EnableState) String() string {
+	switch es {
+	case EnableStateFeatureEnabled:
+		return "enabled"
+	case EnableStateFeatureDisabled:
+		return "disabled"
+	default:
+		return "unknown"
 	}
 }
 
@@ -524,7 +568,7 @@ func (d Device) BoardID() (uint, error) {
 	return uint(boardid), errorString(r)
 }
 
-//ComputeMode returns the current Compute Mode of the Device
+//ComputeMode returns the current Compute Mode of the device.
 func (d Device) ComputeMode() (ComputeMode, error) {
 	if C.nvmlHandle == nil {
 		return ComputeModeDefault, errLibraryNotLoaded
@@ -532,6 +576,26 @@ func (d Device) ComputeMode() (ComputeMode, error) {
 	var cm C.nvmlComputeMode_t
 	r := C.nvmlDeviceGetComputeMode(d.dev, &cm)
 	return ComputeMode(cm), errorString(r)
+}
+
+//DisplayMode returns the current Display Mode of the device.
+func (d Device) DisplayMode() (EnableState, error) {
+	if C.nvmlHandle == nil {
+		return -1, errLibraryNotLoaded
+	}
+	var es C.nvmlEnableState_t
+	r := C.nvmlDeviceGetDisplayMode(d.dev, &es)
+	return EnableState(es), errorString(r)
+}
+
+//DisplayActive returns if there currently is an active display attached.
+func (d Device) DisplayActive() (EnableState, error) {
+	if C.nvmlHandle == nil {
+		return -1, errLibraryNotLoaded
+	}
+	var es C.nvmlEnableState_t
+	r := C.nvmlDeviceGetDisplayActive(d.dev, &es)
+	return EnableState(es), errorString(r)
 }
 
 // MinorNumber returns the minor number for the device.
