@@ -144,6 +144,14 @@ nvmlReturn_t nvmlDeviceGetMinorNumber(nvmlDevice_t device, unsigned int *minorNu
   return nvmlDeviceGetMinorNumberFunc(device, minorNumber);
 }
 
+nvmlReturn_t (*nvmlDeviceGetPcieThroughputFunc)(nvmlDevice_t device, nvmlPcieUtilCounter_t counter, unsigned int* value);
+nvmlReturn_t nvmlDeviceGetPcieThroughput(nvmlDevice_t device, nvmlPcieUtilCounter_t counter, unsigned int* value) {
+  if (nvmlDeviceGetPcieThroughputFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetPcieThroughputFunc(device, counter, value);
+}
+
 nvmlReturn_t (*nvmlDeviceGetUUIDFunc)(nvmlDevice_t device, char *uuid, unsigned int length);
 nvmlReturn_t nvmlDeviceGetUUID(nvmlDevice_t device, char *uuid, unsigned int length) {
   if (nvmlDeviceGetUUIDFunc == NULL) {
@@ -192,12 +200,76 @@ nvmlReturn_t nvmlDeviceGetPowerUsage(nvmlDevice_t device, unsigned int *power) {
   return nvmlDeviceGetPowerUsageFunc(device, power);
 }
 
+nvmlReturn_t (*nvmlDeviceGetPowerStateFunc)(nvmlDevice_t device, nvmlPstates_t* pState);
+nvmlReturn_t nvmlDeviceGetPowerState(nvmlDevice_t device, nvmlPstates_t* pState){
+	if (nvmlDeviceGetPowerStateFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetPowerStateFunc(device, pState);
+}
+
+nvmlReturn_t (*nvmlDeviceGetPowerManagementLimitFunc)(nvmlDevice_t device, unsigned int* limit);
+nvmlReturn_t nvmlDeviceGetPowerManagementLimit(nvmlDevice_t device, unsigned int* limit){
+	if (nvmlDeviceGetPowerManagementLimitFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetPowerManagementLimitFunc(device, limit);
+}
+
+nvmlReturn_t (*nvmlDeviceGetEnforcedPowerLimitFunc)(nvmlDevice_t device, unsigned int* limit);
+nvmlReturn_t nvmlDeviceGetEnforcedPowerLimit(nvmlDevice_t device, unsigned int* limit){
+	if (nvmlDeviceGetEnforcedPowerLimitFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetEnforcedPowerLimitFunc(device, limit);
+}
+
+nvmlReturn_t (*nvmlDeviceGetCurrPcieLinkGenerationFunc)(nvmlDevice_t device, unsigned int* currLinkGen);
+nvmlReturn_t nvmlDeviceGetCurrPcieLinkGeneration(nvmlDevice_t device, unsigned int* currLinkGen){
+	if (nvmlDeviceGetCurrPcieLinkGenerationFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetCurrPcieLinkGenerationFunc(device, currLinkGen);
+}
+
+nvmlReturn_t (*nvmlDeviceGetMaxPcieLinkGenerationFunc)(nvmlDevice_t device, unsigned int* maxLinkGen);
+nvmlReturn_t nvmlDeviceGetMaxPcieLinkGeneration(nvmlDevice_t device, unsigned int* maxLinkGen){
+	if (nvmlDeviceGetMaxPcieLinkGenerationFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetMaxPcieLinkGenerationFunc(device, maxLinkGen);
+}
+
+nvmlReturn_t (*nvmlDeviceGetCurrPcieLinkWidthFunc)(nvmlDevice_t device, unsigned int* currLinkWidth);
+nvmlReturn_t nvmlDeviceGetCurrPcieLinkWidth(nvmlDevice_t device, unsigned int* currLinkWidth){
+	if (nvmlDeviceGetCurrPcieLinkWidthFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetCurrPcieLinkWidthFunc(device, currLinkWidth);
+}
+
+nvmlReturn_t (*nvmlDeviceGetMaxPcieLinkWidthFunc)(nvmlDevice_t device, unsigned int* maxLinkWidth);
+nvmlReturn_t nvmlDeviceGetMaxPcieLinkWidth(nvmlDevice_t device, unsigned int* maxLinkWidth){
+	if (nvmlDeviceGetMaxPcieLinkWidthFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetMaxPcieLinkWidthFunc(device, maxLinkWidth);
+}
+
 nvmlReturn_t (*nvmlDeviceGetTemperatureFunc)(nvmlDevice_t device, nvmlTemperatureSensors_t sensorType, unsigned int *temp);
 nvmlReturn_t nvmlDeviceGetTemperature(nvmlDevice_t device, nvmlTemperatureSensors_t sensorType, unsigned int *temp) {
   if (nvmlDeviceGetTemperatureFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   return nvmlDeviceGetTemperatureFunc(device, sensorType, temp);
+}
+
+nvmlReturn_t (*nvmlDeviceGetTemperatureThresholdFunc)(nvmlDevice_t device, nvmlTemperatureThresholds_t thresholdType, unsigned int* temp);
+nvmlReturn_t nvmlDeviceGetTemperatureThreshold(nvmlDevice_t device, nvmlTemperatureThresholds_t thresholdType, unsigned int* temp) {
+  if (nvmlDeviceGetTemperatureThresholdFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetTemperatureThresholdFunc(device, thresholdType, temp);
 }
 
 nvmlReturn_t (*nvmlDeviceGetFanSpeedFunc)(nvmlDevice_t device, unsigned int *speed);
@@ -298,6 +370,26 @@ nvmlReturn_t nvmlInit_dl(void) {
 	if(nvmlDeviceGetBAR1MemoryInfoFunc == NULL) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
 	}
+	nvmlDeviceGetPcieThroughputFunc = dlsym(nvmlHandle, "nvmlDeviceGetPcieThroughput");
+	if(nvmlDeviceGetPcieThroughputFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	nvmlDeviceGetCurrPcieLinkGenerationFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrPcieLinkGeneration");
+	if(nvmlDeviceGetCurrPcieLinkGenerationFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	nvmlDeviceGetMaxPcieLinkGenerationFunc = dlsym(nvmlHandle, "nvmlDeviceGetMaxPcieLinkGeneration");
+	if(nvmlDeviceGetMaxPcieLinkGenerationFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	nvmlDeviceGetMaxPcieLinkWidthFunc = dlsym(nvmlHandle, "nvmlDeviceGetMaxPcieLinkWidth");
+	if(nvmlDeviceGetMaxPcieLinkWidthFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	nvmlDeviceGetCurrPcieLinkWidthFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrPcieLinkWidth");
+	if(nvmlDeviceGetCurrPcieLinkWidthFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
   nvmlDeviceGetMinorNumberFunc = dlsym(nvmlHandle, "nvmlDeviceGetMinorNumber");
   if (nvmlDeviceGetMinorNumberFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
@@ -322,8 +414,24 @@ nvmlReturn_t nvmlInit_dl(void) {
   if (nvmlDeviceGetPowerUsageFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
+	nvmlDeviceGetPowerManagementLimitFunc = dlsym(nvmlHandle, "nvmlDeviceGetPowerManagementLimit");
+	if (nvmlDeviceGetPowerManagementLimitFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+	nvmlDeviceGetEnforcedPowerLimitFunc = dlsym(nvmlHandle, "nvmlDeviceGetEnforcedPowerLimit");
+	if (nvmlDeviceGetEnforcedPowerLimitFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+	nvmlDeviceGetPowerStateFunc = dlsym(nvmlHandle, "nvmlDeviceGetPowerState");
+	if (nvmlDeviceGetPowerStateFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
   nvmlDeviceGetTemperatureFunc = dlsym(nvmlHandle, "nvmlDeviceGetTemperature");
   if (nvmlDeviceGetTemperatureFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+	nvmlDeviceGetTemperatureThresholdFunc = dlsym(nvmlHandle, "nvmlDeviceGetTemperatureThreshold");
+	if (nvmlDeviceGetTemperatureThresholdFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlDeviceGetFanSpeedFunc = dlsym(nvmlHandle, "nvmlDeviceGetFanSpeed");
@@ -433,6 +541,7 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -585,6 +694,67 @@ func (es EnableState) String() string {
 	}
 }
 
+type PowerState int
+
+const (
+	PowerState0       PowerState = C.NVML_PSTATE_0
+	PowerState1       PowerState = C.NVML_PSTATE_1
+	PowerState2       PowerState = C.NVML_PSTATE_2
+	PowerState3       PowerState = C.NVML_PSTATE_3
+	PowerState4       PowerState = C.NVML_PSTATE_4
+	PowerState5       PowerState = C.NVML_PSTATE_5
+	PowerState6       PowerState = C.NVML_PSTATE_6
+	PowerState7       PowerState = C.NVML_PSTATE_7
+	PowerState8       PowerState = C.NVML_PSTATE_8
+	PowerState9       PowerState = C.NVML_PSTATE_9
+	PowerState10      PowerState = C.NVML_PSTATE_10
+	PowerState11      PowerState = C.NVML_PSTATE_11
+	PowerState12      PowerState = C.NVML_PSTATE_12
+	PowerState13      PowerState = C.NVML_PSTATE_13
+	PowerState14      PowerState = C.NVML_PSTATE_14
+	PowerState15      PowerState = C.NVML_PSTATE_15
+	PowerStateUnknown PowerState = C.NVML_PSTATE_UNKNOWN
+)
+
+func (ps PowerState) String() string {
+	switch ps {
+	case PowerState0:
+		return "P0 - Maximum Performance"
+	case PowerState1:
+		return "P1"
+	case PowerState2:
+		return "P2"
+	case PowerState3:
+		return "P3"
+	case PowerState4:
+		return "P4"
+	case PowerState5:
+		return "P5"
+	case PowerState6:
+		return "P6"
+	case PowerState7:
+		return "P7"
+	case PowerState8:
+		return "P8"
+	case PowerState9:
+		return "P9"
+	case PowerState10:
+		return "P10"
+	case PowerState11:
+		return "P11"
+	case PowerState12:
+		return "P12"
+	case PowerState13:
+		return "P13"
+	case PowerState14:
+		return "P14"
+	case PowerState15:
+		return "P15 - Minimum Performance"
+	default:
+		return "unknown"
+	}
+}
+
 // DeviceHandleByIndex returns the device handle for a particular index.
 // The indices range from 0 to DeviceCount()-1. The order in which NVML
 // enumerates devices has no guarantees of consistency between reboots.
@@ -597,7 +767,7 @@ func DeviceHandleByIndex(idx uint) (Device, error) {
 	return Device{dev}, errorString(r)
 }
 
-//Index return the index of the device
+// Index return the index of the device
 func (d Device) Index() (uint, error) {
 	if C.nvmlHandle == nil {
 		return 0, errLibraryNotLoaded
@@ -607,7 +777,7 @@ func (d Device) Index() (uint, error) {
 	return uint(index), errorString(r)
 }
 
-//Brand returns the Product Brand of the device.
+// Brand returns the Product Brand of the device.
 func (d Device) Brand() (DeviceBrand, error) {
 	if C.nvmlHandle == nil {
 		return DeviceBrandUnknown, errLibraryNotLoaded
@@ -617,8 +787,8 @@ func (d Device) Brand() (DeviceBrand, error) {
 	return DeviceBrand(brand), errorString(r)
 }
 
-//BoardID returns the Devices Board ID.
-//Devices with the same boardId indicate GPUs connected to the same PLX.
+// BoardID returns the Devices Board ID.
+// Devices with the same boardId indicate GPUs connected to the same PLX.
 func (d Device) BoardID() (uint, error) {
 	if C.nvmlHandle == nil {
 		return 0, errLibraryNotLoaded
@@ -628,7 +798,7 @@ func (d Device) BoardID() (uint, error) {
 	return uint(boardid), errorString(r)
 }
 
-//ComputeMode returns the current Compute Mode of the device.
+// ComputeMode returns the current Compute Mode of the device.
 func (d Device) ComputeMode() (ComputeMode, error) {
 	if C.nvmlHandle == nil {
 		return ComputeModeDefault, errLibraryNotLoaded
@@ -638,7 +808,7 @@ func (d Device) ComputeMode() (ComputeMode, error) {
 	return ComputeMode(cm), errorString(r)
 }
 
-//DisplayMode returns the current Display Mode of the device.
+// DisplayMode returns the current Display Mode of the device.
 func (d Device) DisplayMode() (EnableState, error) {
 	if C.nvmlHandle == nil {
 		return -1, errLibraryNotLoaded
@@ -648,7 +818,7 @@ func (d Device) DisplayMode() (EnableState, error) {
 	return EnableState(es), errorString(r)
 }
 
-//DisplayActive returns if there currently is an active display attached.
+// DisplayActive returns if there currently is an active display attached.
 func (d Device) DisplayActive() (EnableState, error) {
 	if C.nvmlHandle == nil {
 		return -1, errLibraryNotLoaded
@@ -658,7 +828,7 @@ func (d Device) DisplayActive() (EnableState, error) {
 	return EnableState(es), errorString(r)
 }
 
-//VBiosVersion returns VBIOS version of the device.
+// VBiosVersion returns VBIOS version of the device.
 func (d Device) VBiosVersion() (string, error) {
 	if C.nvmlHandle == nil {
 		return "", errLibraryNotLoaded
@@ -668,7 +838,7 @@ func (d Device) VBiosVersion() (string, error) {
 	return C.GoString(&version[0]), errorString(r)
 }
 
-//Serial returns the globally unique board serial number associated with this device's board.
+// Serial returns the globally unique board serial number associated with this device's board.
 func (d Device) Serial() (string, error) {
 	if C.nvmlHandle == nil {
 		return "", errLibraryNotLoaded
@@ -721,8 +891,8 @@ func (d Device) MemoryInfo() (uint64, uint64, error) {
 }
 
 // Bar1MemoryInfo returns the total and used memory (in bytes) of the devices BAR1 Memory.
-//BAR1 is used to map the FB (device memory) so that it can be directly accessed by
-//the CPU or by 3rd party devices (peer-to-peer on the PCIE bus).
+// BAR1 is used to map the FB (device memory) so that it can be directly accessed by
+//  the CPU or by 3rd party devices (peer-to-peer on the PCIE bus).
 func (d Device) Bar1MemoryInfo() (uint64, uint64, error) {
 	if C.nvmlHandle == nil {
 		return 0, 0, errLibraryNotLoaded
@@ -753,6 +923,47 @@ func (d Device) PowerUsage() (uint, error) {
 	var n C.uint
 	r := C.nvmlDeviceGetPowerUsage(d.dev, &n)
 	return uint(n), errorString(r)
+}
+
+// PowerState returns the current PState of the GPU Device
+func (d Device) PowerState() (PowerState, error) {
+	if C.nvmlHandle == nil {
+		return PowerStateUnknown, errLibraryNotLoaded
+	}
+	var ps C.nvmlPstates_t
+	r := C.nvmlDeviceGetPowerState(d.dev, &ps)
+	return PowerState(ps), errorString(r)
+}
+
+// PowerLimits returns the devices power Limits
+// management (first uint): The power limit defines the upper boundary for the
+//  card's power draw. If the card's total power draw reaches this limit the
+//  power management algorithm kicks in.
+// enforced (second uint): Get the effective power limit that the driver
+//  enforces after taking into account all limiters.
+//  Note: This can be different from the management limit if
+//  other limits are set elsewhere This includes the out of band power limit
+//  interface
+func (d Device) PowerLimits() (uint, uint, error) {
+	var errors []string
+
+	if C.nvmlHandle == nil {
+		return 0, 0, errLibraryNotLoaded
+	}
+	var management, enforced C.uint
+	r := C.nvmlDeviceGetEnforcedPowerLimit(d.dev, &enforced)
+	if errorString(r) != nil {
+		errors = append(errors, errorString(r).Error())
+	}
+	r = C.nvmlDeviceGetPowerManagementLimit(d.dev, &management)
+	if errorString(r) != nil {
+		errors = append(errors, errorString(r).Error())
+	}
+
+	if len(errors) > 0 {
+		return uint(management), uint(enforced), fmt.Errorf(strings.Join(errors, "\n"))
+	}
+	return uint(management), uint(enforced), nil
 }
 
 // AveragePowerUsage returns the power usage for this GPU and its associated circuitry
@@ -790,6 +1001,35 @@ func (d Device) Temperature() (uint, error) {
 	return uint(n), errorString(r)
 }
 
+// TemperatureThresholds returns the temperature thresholds for this device in Celcius
+// first return argument is the shutdown threshold, second is the slowdown threshold
+func (d Device) TemperatureThresholds() (uint, uint, error) {
+	var errors []string
+
+	if C.nvmlHandle == nil {
+		return 0, 0, errLibraryNotLoaded
+	}
+
+	//shutdown type
+	var shutdown C.uint
+	r := C.nvmlDeviceGetTemperatureThreshold(d.dev, C.NVML_TEMPERATURE_THRESHOLD_SHUTDOWN, &shutdown)
+	if errorString(r) != nil {
+		errors = append(errors, errorString(r).Error())
+	}
+
+	//slowdown type
+	var slowdown C.uint
+	r = C.nvmlDeviceGetTemperatureThreshold(d.dev, C.NVML_TEMPERATURE_THRESHOLD_SLOWDOWN, &slowdown)
+	if errorString(r) != nil {
+		errors = append(errors, errorString(r).Error())
+	}
+
+	if len(errors) > 0 {
+		return uint(shutdown), uint(slowdown), fmt.Errorf(strings.Join(errors, "\n"))
+	}
+	return uint(shutdown), uint(slowdown), nil
+}
+
 // FanSpeed returns the temperature for this GPU in the percentage of its full
 // speed, with 100 being the maximum.
 func (d Device) FanSpeed() (uint, error) {
@@ -807,8 +1047,7 @@ func (d Device) EncoderUtilization() (uint, uint, error) {
 	if C.nvmlHandle == nil {
 		return 0, 0, errLibraryNotLoaded
 	}
-	var n C.uint
-	var sp C.uint
+	var n, sp C.uint
 	r := C.nvmlDeviceGetEncoderUtilization(d.dev, &n, &sp)
 	return uint(n), uint(sp), errorString(r)
 }
@@ -819,8 +1058,79 @@ func (d Device) DecoderUtilization() (uint, uint, error) {
 	if C.nvmlHandle == nil {
 		return 0, 0, errLibraryNotLoaded
 	}
-	var n C.uint
-	var sp C.uint
+	var n, sp C.uint
 	r := C.nvmlDeviceGetDecoderUtilization(d.dev, &n, &sp)
 	return uint(n), uint(sp), errorString(r)
+}
+
+// PCIeThroughput returns the current PCIe tx and rx bytes
+// first uint is tx, second is rx in KB/s
+func (d Device) PCIeThroughput() (uint, uint, error) {
+	var errors []string
+
+	if C.nvmlHandle == nil {
+		return 0, 0, errLibraryNotLoaded
+	}
+	var rx, tx C.uint
+	r := C.nvmlDeviceGetPcieThroughput(d.dev, C.NVML_PCIE_UTIL_TX_BYTES, &tx)
+	if errorString(r) != nil {
+		errors = append(errors, "Unable to query PCIe TX utilization: "+errorString(r).Error())
+	}
+	r = C.nvmlDeviceGetPcieThroughput(d.dev, C.NVML_PCIE_UTIL_RX_BYTES, &rx)
+	if errorString(r) != nil {
+		errors = append(errors, "Unable to query PCIe RX utilization: "+errorString(r).Error())
+	}
+
+	if len(errors) > 0 {
+		return uint(tx), uint(rx), fmt.Errorf(strings.Join(errors, "\n"))
+	}
+	return uint(tx), uint(rx), nil
+}
+
+// PCIeLinkGen returns the current PCIe Link generation
+// first uint ist the current generation, second is the maximum supported generation
+func (d Device) PCIeLinkGen() (uint, uint, error) {
+	var errors []string
+
+	if C.nvmlHandle == nil {
+		return 0, 0, errLibraryNotLoaded
+	}
+	var curr, max C.uint
+	r := C.nvmlDeviceGetMaxPcieLinkGeneration(d.dev, &max)
+	if errorString(r) != nil {
+		errors = append(errors, "Unable to query PCIe max link generation: "+errorString(r).Error())
+	}
+	r = C.nvmlDeviceGetCurrPcieLinkGeneration(d.dev, &curr)
+	if errorString(r) != nil {
+		errors = append(errors, "Unable to query PCIe current link generation: "+errorString(r).Error())
+	}
+
+	if len(errors) > 0 {
+		return uint(curr), uint(max), fmt.Errorf(strings.Join(errors, "\n"))
+	}
+	return uint(curr), uint(max), nil
+}
+
+// PCIeLinkWidth returns the current PCIe Link generation
+// first uint ist the current width, second is the maximum supported width
+func (d Device) PCIeLinkWidth() (uint, uint, error) {
+	var errors []string
+
+	if C.nvmlHandle == nil {
+		return 0, 0, errLibraryNotLoaded
+	}
+	var curr, max C.uint
+	r := C.nvmlDeviceGetMaxPcieLinkWidth(d.dev, &max)
+	if errorString(r) != nil {
+		errors = append(errors, "Unable to query PCIe max link wdith: "+errorString(r).Error())
+	}
+	r = C.nvmlDeviceGetCurrPcieLinkWidth(d.dev, &curr)
+	if errorString(r) != nil {
+		errors = append(errors, "Unable to query PCIe current link width: "+errorString(r).Error())
+	}
+
+	if len(errors) > 0 {
+		return uint(curr), uint(max), fmt.Errorf(strings.Join(errors, "\n"))
+	}
+	return uint(curr), uint(max), nil
 }
