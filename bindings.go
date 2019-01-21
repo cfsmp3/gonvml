@@ -296,6 +296,38 @@ nvmlReturn_t nvmlDeviceGetDecoderUtilization(nvmlDevice_t device, unsigned int* 
   return nvmlDeviceGetDecoderUtilizationFunc(device, utilization, samplingPeriodUs);
 }
 
+nvmlReturn_t (*nvmlDeviceGetApplicationsClockFunc)(nvmlDevice_t device, nvmlClockType_t clockType, unsigned int* clockMHz);
+nvmlReturn_t nvmlDeviceGetApplicationsClock(nvmlDevice_t device, nvmlClockType_t clockType, unsigned int* clockMHz){
+	if (nvmlDeviceGetApplicationsClockFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetApplicationsClockFunc(device, clockType, clockMHz);
+}
+
+nvmlReturn_t (*nvmlDeviceGetClockInfoFunc)(nvmlDevice_t device, nvmlClockType_t type, unsigned int* clock);
+nvmlReturn_t nvmlDeviceGetClockInfo(nvmlDevice_t device, nvmlClockType_t type, unsigned int* clock){
+	if (nvmlDeviceGetClockInfoFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetClockInfoFunc(device, type, clock);
+}
+
+nvmlReturn_t (*nvmlDeviceGetComputeRunningProcessesFunc)(nvmlDevice_t device, unsigned int* infoCount, nvmlProcessInfo_t* infos);
+nvmlReturn_t nvmlDeviceGetComputeRunningProcesses(nvmlDevice_t device, unsigned int* infoCount, nvmlProcessInfo_t* infos){
+	if (nvmlDeviceGetComputeRunningProcessesFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetComputeRunningProcessesFunc(device, infoCount, infos);
+}
+
+nvmlReturn_t (*nvmlDeviceGetGraphicsRunningProcessesFunc)(nvmlDevice_t device, unsigned int* infoCount, nvmlProcessInfo_t* infos);
+nvmlReturn_t nvmlDeviceGetGraphicsRunningProcesses(nvmlDevice_t device, unsigned int* infoCount, nvmlProcessInfo_t* infos){
+	if (nvmlDeviceGetGraphicsRunningProcessesFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetGraphicsRunningProcessesFunc(device, infoCount, infos);
+}
+
 nvmlReturn_t (*nvmlDeviceGetSamplesFunc)(nvmlDevice_t device, nvmlSamplingType_t type, unsigned long long lastSeenTimeStamp, nvmlValueType_t *sampleValType, unsigned int *sampleCount, nvmlSample_t *samples);
 
 // Loads the "libnvidia-ml.so.1" shared library.
@@ -448,6 +480,22 @@ nvmlReturn_t nvmlInit_dl(void) {
   }
   nvmlDeviceGetDecoderUtilizationFunc = dlsym(nvmlHandle, "nvmlDeviceGetDecoderUtilization");
   if (nvmlDeviceGetDecoderUtilizationFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+	nvmlDeviceGetApplicationsClockFunc = dlsym(nvmlHandle, "nvmlDeviceGetApplicationsClock");
+	if (nvmlDeviceGetApplicationsClockFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+	nvmlDeviceGetClockInfoFunc = dlsym(nvmlHandle, "nvmlDeviceGetClockInfo");
+	if (nvmlDeviceGetClockInfoFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+	nvmlDeviceGetComputeRunningProcessesFunc = dlsym(nvmlHandle, "nvmlDeviceGetComputeRunningProcesses");
+	if (nvmlDeviceGetComputeRunningProcessesFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+	nvmlDeviceGetGraphicsRunningProcessesFunc = dlsym(nvmlHandle, "nvmlDeviceGetGraphicsRunningProcesses");
+	if (nvmlDeviceGetGraphicsRunningProcessesFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlReturn_t result = nvmlInitFunc();
@@ -619,17 +667,35 @@ type Device struct {
 	dev C.nvmlDevice_t
 }
 
-//DeviceBrand is the equivalent for nvmlBrandType_t.
+// Process is the exported handle for a process instance
+type Process interface {
+	PID() uint
+	Memory() uint64
+}
+
+type process struct {
+	pid           uint
+	usedGpuMemory uint64
+}
+
+func (proc process) PID() uint {
+	return proc.pid
+}
+
+func (proc process) Memory() uint64 {
+	return proc.usedGpuMemory
+}
+
+// DeviceBrand is the equivalent for nvmlBrandType_t.
 type DeviceBrand int
 
-//Enumeration mapping for DeviceBrand to nvmlBrandType_t
+// Enumeration mapping for DeviceBrand to nvmlBrandType_t
 const (
 	DeviceBrandUnknown DeviceBrand = C.NVML_BRAND_UNKNOWN
 	DeviceBrandTesla   DeviceBrand = C.NVML_BRAND_TESLA
 	DeviceBrandNVS     DeviceBrand = C.NVML_BRAND_NVS
 	DeviceBrandGRID    DeviceBrand = C.NVML_BRAND_GRID
 	DeviceBrandGeForce DeviceBrand = C.NVML_BRAND_GEFORCE
-	DeviceBrandCount   DeviceBrand = C.NVML_BRAND_COUNT
 )
 
 func (b DeviceBrand) String() string {
@@ -647,16 +713,15 @@ func (b DeviceBrand) String() string {
 	}
 }
 
-//ComputeMode is the quivalent for nvmlComputeMode_t.
+// ComputeMode is the quivalent for nvmlComputeMode_t.
 type ComputeMode int
 
-//Enumeration mapping for ComputeMode to nvmlComputeMode_t
+// Enumeration mapping for ComputeMode to nvmlComputeMode_t
 const (
 	ComputeModeDefault          ComputeMode = C.NVML_COMPUTEMODE_DEFAULT
 	ComputeModeExclusiveThread  ComputeMode = C.NVML_COMPUTEMODE_EXCLUSIVE_THREAD
 	ComputeModeProhibited       ComputeMode = C.NVML_COMPUTEMODE_PROHIBITED
 	ComputeModeExclusiveProcess ComputeMode = C.NVML_COMPUTEMODE_EXCLUSIVE_PROCESS
-	ComputeModeCount            ComputeMode = C.NVML_COMPUTEMODE_COUNT
 )
 
 func (cm ComputeMode) String() string {
@@ -674,10 +739,10 @@ func (cm ComputeMode) String() string {
 	}
 }
 
-//EnableState is the quivalent for nvmlEnableState_t.
+// EnableState is the quivalent for nvmlEnableState_t.
 type EnableState int
 
-//Enumeration mapping for ComputeMode to nvmlComputeMode_t
+// Enumeration mapping for ComputeMode to nvmlComputeMode_t
 const (
 	EnableStateFeatureEnabled  EnableState = C.NVML_FEATURE_ENABLED
 	EnableStateFeatureDisabled EnableState = C.NVML_FEATURE_DISABLED
@@ -694,8 +759,10 @@ func (es EnableState) String() string {
 	}
 }
 
+// PowerState is the equivalent to nvmlPstates_t
 type PowerState int
 
+// Enumeration mapping for PowerState to nvmlPstates_t
 const (
 	PowerState0       PowerState = C.NVML_PSTATE_0
 	PowerState1       PowerState = C.NVML_PSTATE_1
@@ -750,6 +817,29 @@ func (ps PowerState) String() string {
 		return "P14"
 	case PowerState15:
 		return "P15 - Minimum Performance"
+	default:
+		return "unknown"
+	}
+}
+
+// ClockType is the equivalent nvmlClockType_t
+type ClockType int
+
+//Enumeration mapping for ClockType to nvmlClockType_t
+const (
+	ClockTypeGraphics ClockType = C.NVML_CLOCK_GRAPHICS
+	ClockTypeSM       ClockType = C.NVML_CLOCK_SM
+	ClockTypeMem      ClockType = C.NVML_CLOCK_MEM
+)
+
+func (ct ClockType) String() string {
+	switch ct {
+	case ClockTypeGraphics:
+		return "graphics"
+	case ClockTypeSM:
+		return "sm"
+	case ClockTypeMem:
+		return "memory"
 	default:
 		return "unknown"
 	}
@@ -1133,4 +1223,85 @@ func (d Device) PCIeLinkWidth() (uint, uint, error) {
 		return uint(curr), uint(max), fmt.Errorf(strings.Join(errors, "\n"))
 	}
 	return uint(curr), uint(max), nil
+}
+
+// ApplicationClock returns the current clock of a device application in MHz.
+// the application should be specified in ct
+func (d Device) ApplicationClock(ct ClockType) (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var clock C.uint
+	r := C.nvmlDeviceGetApplicationsClock(d.dev, C.nvmlClockType_t(ct), &clock)
+	return uint(clock), errorString(r)
+}
+
+// Clock returns the current clock of a device application in MHz.
+// the application should be specified in ct
+func (d Device) Clock(ct ClockType) (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var clock C.uint
+	r := C.nvmlDeviceGetClockInfo(d.dev, C.nvmlClockType_t(ct), &clock)
+	return uint(clock), errorString(r)
+}
+
+// ComputeProcesses returns information about processes with a compute context on a device
+func (d Device) ComputeProcesses() ([]Process, error) {
+	var size = C.uint(2)
+	var cprocs []C.nvmlProcessInfo_t
+	var r C.nvmlReturn_t
+	if C.nvmlHandle == nil {
+		return nil, errLibraryNotLoaded
+	}
+	for r = C.nvmlReturn_t(C.NVML_ERROR_INSUFFICIENT_SIZE); r == C.NVML_ERROR_INSUFFICIENT_SIZE; {
+		cprocs = make([]C.nvmlProcessInfo_t, uint(size))
+		r = C.nvmlDeviceGetComputeRunningProcesses(d.dev, &size, &cprocs[0])
+	}
+	if(uint(size) > 0){
+		procs := make([]process, len(cprocs))
+		for i, cproc := range cprocs {
+			procs[i].pid = uint(cproc.pid)
+			procs[i].usedGpuMemory = uint64(cproc.usedGpuMemory)
+		}
+
+		Procs := make([]Process, len(procs))
+		for i, tmp := range procs {
+			Procs[i] = tmp
+		}
+
+		return Procs, errorString(r)
+	}
+	return nil, errorString(r)
+}
+
+// GraphicsProcesses returns information about processes with a graphics context on a device
+func (d Device) GraphicsProcesses() ([]Process, error) {
+	var size = C.uint(2)
+	var cprocs []C.nvmlProcessInfo_t
+	var r C.nvmlReturn_t
+	if C.nvmlHandle == nil {
+		return nil, errLibraryNotLoaded
+	}
+	for r = C.nvmlReturn_t(C.NVML_ERROR_INSUFFICIENT_SIZE); r == C.NVML_ERROR_INSUFFICIENT_SIZE; {
+		cprocs = make([]C.nvmlProcessInfo_t, uint(size))
+		r = C.nvmlDeviceGetGraphicsRunningProcesses(d.dev, &size, &cprocs[0])
+	}
+
+	if(uint(size) > 0){
+		procs := make([]process, len(cprocs))
+		for i, cproc := range cprocs {
+			procs[i].pid = uint(cproc.pid)
+			procs[i].usedGpuMemory = uint64(cproc.usedGpuMemory)
+		}
+
+		Procs := make([]Process, len(procs))
+		for i, tmp := range procs {
+			Procs[i] = tmp
+		}
+
+		return Procs, errorString(r)
+	}
+	return nil, errorString(r)
 }
