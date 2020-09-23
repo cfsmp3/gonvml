@@ -415,11 +415,11 @@ func (d Device) MinorNumber() (uint, error) {
 // BusID returns the BusID
 func (d Device) BusID() (string, error) {
 	if C.nvmlHandle == nil {
-		return 0, errLibraryNotLoaded
+		return "", errLibraryNotLoaded
 	}
 	var pci C.nvmlPciInfo_t
 
-	r := C.nvmlDeviceGetPciInfo(h.dev, &pci)
+	r := C.nvmlDeviceGetPciInfo(d.dev, &pci)
 	return C.GoString(&pci.busId[0]), errorString(r)
 }
 
