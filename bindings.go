@@ -143,8 +143,8 @@ nvmlReturn_t nvmlDeviceGetDecoderUtilization(nvmlDevice_t device, unsigned int* 
   return nvmlDeviceGetDecoderUtilizationFunc(device, utilization, samplingPeriodUs);
 }
 
-nvmlReturn_t (*nvmlDeviceGetPciInfoFunc)(nvmlDevice_t device, C.nvmlPciInfo_t* pci);
-nvmlReturn_t nvmlDeviceGetPciInfo(nvmlDevice_t device, C.nvmlPciInfo_t* pci) {
+nvmlReturn_t (*nvmlDeviceGetPciInfoFunc)(nvmlDevice_t device, nvmlPciInfo_t* pci);
+nvmlReturn_t nvmlDeviceGetPciInfo(nvmlDevice_t device, nvmlPciInfo_t* pci) {
   if (nvmlDeviceGetPciInfoFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
