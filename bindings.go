@@ -143,6 +143,14 @@ nvmlReturn_t nvmlDeviceGetDecoderUtilization(nvmlDevice_t device, unsigned int* 
   return nvmlDeviceGetDecoderUtilizationFunc(device, utilization, samplingPeriodUs);
 }
 
+nvmlReturn_t (*nvmlDeviceGetPciInfoFunc)(nvmlDevice_t device, C.nvmlPciInfo_t* pci);
+nvmlReturn_t nvmlDeviceGetPciInfo(nvmlDevice_t device, C.nvmlPciInfo_t* pci) {
+  if (nvmlDeviceGetPciInfoFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetPciInfoFunc(device, pci);
+}
+
 nvmlReturn_t (*nvmlDeviceGetSamplesFunc)(nvmlDevice_t device, nvmlSamplingType_t type, unsigned long long lastSeenTimeStamp, nvmlValueType_t *sampleValType, unsigned int *sampleCount, nvmlSample_t *samples);
 
 // Loads the "libnvidia-ml.so.1" shared library.
@@ -219,6 +227,10 @@ nvmlReturn_t nvmlInit_dl(void) {
   }
   nvmlDeviceGetDecoderUtilizationFunc = dlsym(nvmlHandle, "nvmlDeviceGetDecoderUtilization");
   if (nvmlDeviceGetDecoderUtilizationFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceGetPciInfoFunc = dlsym(nvmlHandle, "nvmlDeviceGetPciInfo");
+  if (nvmlDeviceGetPciInfoFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlReturn_t result = nvmlInitFunc();
@@ -398,6 +410,17 @@ func (d Device) MinorNumber() (uint, error) {
 	var n C.uint
 	r := C.nvmlDeviceGetMinorNumber(d.dev, &n)
 	return uint(n), errorString(r)
+}
+
+// BusID returns the BusID
+func (d Device) BusID() (string, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var pci C.nvmlPciInfo_t
+
+	r := C.nvmlDeviceGetPciInfo(h.dev, &pci)
+	return C.GoString(&pci.busId[0]), errorString(r)
 }
 
 // UUID returns the globally unique immutable UUID associated with this device.
