@@ -320,6 +320,13 @@ nvmlReturn_t nvmlDeviceGetProcessUtilization(nvmlDevice_t device, nvmlProcessUti
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   return nvmlDeviceGetProcessUtilizationFunc(device, utilization, processSamplesCount, lastSeenTimeStamp);
+
+nvmlReturn_t (*nvmlDeviceGetPciInfoFunc)(nvmlDevice_t device, nvmlPciInfo_t* pci);
+nvmlReturn_t nvmlDeviceGetPciInfo(nvmlDevice_t device, nvmlPciInfo_t* pci) {
+  if (nvmlDeviceGetPciInfoFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetPciInfoFunc(device, pci);
 }
 
 nvmlReturn_t (*nvmlDeviceGetSamplesFunc)(nvmlDevice_t device, nvmlSamplingType_t type, unsigned long long lastSeenTimeStamp, nvmlValueType_t *sampleValType, unsigned int *sampleCount, nvmlSample_t *samples);
@@ -488,7 +495,10 @@ nvmlReturn_t nvmlInit_dl(void) {
   if (nvmlDeviceGetProcessUtilizationFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
-
+  nvmlDeviceGetPciInfoFunc = dlsym(nvmlHandle, "nvmlDeviceGetPciInfo");
+  if (nvmlDeviceGetPciInfoFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
   nvmlReturn_t result = nvmlInitFunc();
   if (result != NVML_SUCCESS) {
     dlclose(nvmlHandle);
@@ -711,6 +721,17 @@ func (d Device) MinorNumber() (uint, error) {
 	var n C.uint
 	r := C.nvmlDeviceGetMinorNumber(d.dev, &n)
 	return uint(n), errorString(r)
+}
+
+// BusID returns the BusID
+func (d Device) BusID() (string, error) {
+	if C.nvmlHandle == nil {
+		return "", errLibraryNotLoaded
+	}
+	var pci C.nvmlPciInfo_t
+
+	r := C.nvmlDeviceGetPciInfo(d.dev, &pci)
+	return C.GoString(&pci.busId[0]), errorString(r)
 }
 
 // UUID returns the globally unique immutable UUID associated with this device.
