@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mindprince/gonvml"
+	"github.com/cfsmp3/gonvml"
 )
 
 func main() {
@@ -102,13 +102,6 @@ func main() {
 		} else {
 			fmt.Printf("\tpower.min_limit: %v\n", minLimit / 1000)
 			fmt.Printf("\tpower.max_limit: %v\n", maxLimit / 1000)
-		}
-
-		err = dev.SetPowerLimit(180000)
-		if err != nil {
-			fmt.Printf("\tdev.SetPowerLimit(%v) error: %v\n", powerLimit/1000, err)
-		} else {
-			fmt.Printf("\tnew power.limit: %v\n", powerLimit/1000)
 		}
 
 		powerDraw, err := dev.PowerUsage()

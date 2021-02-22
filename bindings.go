@@ -420,10 +420,6 @@ nvmlReturn_t nvmlInit_dl(void) {
   if (nvmlDeviceGetPowerManagementLimitConstraintsFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
-  nvmlDeviceSetPowerManagementLimitFunc = dlsym(nvmlHandle, "nvmlDeviceSetPowerManagementLimit");
-  if (nvmlDeviceSetPowerManagementLimitFunc == NULL) {
-    return NVML_ERROR_FUNCTION_NOT_FOUND;
-  }
   nvmlDeviceGetPowerManagementDefaultLimitFunc = dlsym(nvmlHandle, "nvmlDeviceGetPowerManagementDefaultLimit");
   if (nvmlDeviceGetPowerManagementDefaultLimitFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
@@ -888,16 +884,6 @@ func (d Device) PowerUsage() (uint, error) {
 	return uint(n), errorString(r)
 }
 
-// PowerLimit retrieves the power management limit associated with this device.
-func (d Device) PowerLimit() (uint, error) {
-	if C.nvmlHandle == nil {
-		return 0, errLibraryNotLoaded
-	}
-	var n C.uint
-	r := C.nvmlDeviceGetPowerManagementLimit(d.dev, &n)
-	return uint(n), errorString(r)
-}
-
 // PowerLimitConstraints retrieves information about possible values of power management limits on this device.
 func (d Device) PowerLimitConstraints() (uint, uint, error) {
 	if C.nvmlHandle == nil {
@@ -907,16 +893,6 @@ func (d Device) PowerLimitConstraints() (uint, uint, error) {
 	var max C.uint
 	r := C.nvmlDeviceGetPowerManagementLimitConstraints(d.dev, &min, &max)
 	return uint(min), uint(max), errorString(r)
-}
-
-// Set new power limit of this device.
-func (d Device) SetPowerLimit(pl uint) error {
-
-	if C.nvmlHandle == nil {
-		return errLibraryNotLoaded
-	}
-	r := C.nvmlDeviceSetPowerManagementLimit(d.dev, C.uint(pl))
-	return errorString(r)
 }
 
 // AveragePowerUsage returns the power usage for this GPU and its associated circuitry
