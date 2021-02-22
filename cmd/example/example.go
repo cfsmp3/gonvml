@@ -107,23 +107,23 @@ func main() {
 		powerDraw, err := dev.PowerUsage()
 		if err != nil {
 			fmt.Printf("\tdev.PowerUsage() error: %v\n", err)
-			return
-		}
-		fmt.Printf("\tpower.draw: %v\n", powerDraw)
+		} else {
+		    fmt.Printf("\tpower.draw: %v\n", powerDraw)
+        }
 
 		averagePowerDraw, err := dev.AveragePowerUsage(10 * time.Second)
 		if err != nil {
 			fmt.Printf("\tdev.AveragePowerUsage() error: %v\n", err)
-			return
-		}
-		fmt.Printf("\taverage power.draw for last 10s: %v\n", averagePowerDraw)
+		} else {
+		    fmt.Printf("\taverage power.draw for last 10s: %v\n", averagePowerDraw)
+        }
 
 		averageGPUUtilization, err := dev.AverageGPUUtilization(10 * time.Second)
 		if err != nil {
 			fmt.Printf("\tdev.AverageGPUUtilization() error: %v\n", err)
-			return
-		}
-		fmt.Printf("\taverage utilization.gpu for last 10s: %v\n", averageGPUUtilization)
+        } else {
+		    fmt.Printf("\taverage utilization.gpu for last 10s: %v\n", averageGPUUtilization)
+        }
 
 		temperature, err := dev.Temperature()
 		if err != nil {
@@ -135,37 +135,37 @@ func main() {
 		fanSpeed, err := dev.FanSpeed()
 		if err != nil {
 			fmt.Printf("\tdev.FanSpeed() error: %v\n", err)
-			return
-		}
-		fmt.Printf("\tfan.speed: %v%%\n", fanSpeed)
+		} else {
+		    fmt.Printf("\tfan.speed: %v%%\n", fanSpeed)
+        }
 
 		encoderUtilization, _, err := dev.EncoderUtilization()
 		if err != nil {
 			fmt.Printf("\tdev.EncoderUtilization() error: %v\n", err)
-			return
-		}
-		fmt.Printf("\tutilization.encoder: %d\n", encoderUtilization)
+		} else {
+		    fmt.Printf("\tutilization.encoder: %d\n", encoderUtilization)
+        }
 
 		decoderUtilization, _, err := dev.DecoderUtilization()
 		if err != nil {
 			fmt.Printf("\tdev.DecoderUtilization() error: %v\n", err)
-			return
-		}
-		fmt.Printf("\tutilization.decoder: %d\n", decoderUtilization)
+		} else {
+		    fmt.Printf("\tutilization.decoder: %d\n", decoderUtilization)
+        }
 
 		modeStats, err := dev.AccountingMode()
 		if err != nil {
 			fmt.Printf("\tdev.DeviceGetAccountingMode() error: %v\n", err)
-			return
-		}
-		fmt.Printf("\taccounting.mode enable: %v\n", modeStats)
+		} else {
+		    fmt.Printf("\taccounting.mode enable: %v\n", modeStats)
+        }
 
 		bufferSize, err := dev.AccountingBufferSize()
 		if err != nil {
 			fmt.Printf("\tdev.DeviceGetAccountingBufferSize() error: %v\n", err)
-			return
-		}
-		fmt.Printf("\taccounting.buffersize: %d\n", bufferSize)
+		} else {
+		    fmt.Printf("\taccounting.buffersize: %d\n", bufferSize)
+        }
 
 		pids, count, err := dev.AccountingPids(bufferSize)
 		if err != nil {
