@@ -61,6 +61,13 @@ func main() {
 		}
 		fmt.Printf("\tminorNumber: %v\n", minorNumber)
 
+		busID, err := dev.BusID()
+		if err != nil {
+			fmt.Printf("\tdev.BusID() error: %v\n", err)
+			return
+		}
+		fmt.Printf("\tBusID: %v\n", busID)
+
 		uuid, err := dev.UUID()
 		if err != nil {
 			fmt.Printf("\tdev.UUID() error: %v\n", err)
@@ -74,6 +81,54 @@ func main() {
 			return
 		}
 		fmt.Printf("\tname: %v\n", name)
+
+		board, err := dev.BoardID()
+		if err != nil {
+			fmt.Printf("\tdev.BoardID() error: %v\n", err)
+		} else {
+		    fmt.Printf("\tBoardID: %v\n", board)
+        }
+
+		vbiosversion, err := dev.VBiosVersion()
+		if err != nil {
+			fmt.Printf("\tdev.VBiosVersion() error: %v\n", err)
+		}
+		fmt.Printf("\tVBiosVersion: %v\n", vbiosversion)
+
+		serial, err := dev.Serial()
+		if err != nil {
+			fmt.Printf("\tdev.Serial() error: %v\n", err)
+		} else {
+		    fmt.Printf("\tSerial: %v\n", serial)
+        }
+
+		displaymode, err := dev.DisplayMode()
+		if err != nil {
+			fmt.Printf("\tdev.DisplayMode() error: %v\n", err)
+			return
+		}
+		fmt.Printf("\tDisplayMode: %d (%v)\n", displaymode, displaymode)
+
+		displayactive, err := dev.DisplayActive()
+		if err != nil {
+			fmt.Printf("\tdev.DisplayActive() error: %v\n", err)
+			return
+		}
+		fmt.Printf("\tDisplayActive: %d (%v)\n", displayactive, displayactive)
+
+		persistencemode, err := dev.PersistenceMode()
+		if err != nil {
+			fmt.Printf("\tdev.PersistenceMode() error: %v\n", err)
+			return
+		}
+		fmt.Printf("\tPersistenceMode: %v\n", persistencemode)
+
+		performancestate, err := dev.PerformanceState()
+		if err != nil {
+			fmt.Printf("\tdev.PerformanceState() error: %v\n", err)
+			return
+		}
+		fmt.Printf("\tPerformanceState: %v\n", performancestate)
 
 		totalMemory, usedMemory, err := dev.MemoryInfo()
 		if err != nil {
@@ -103,6 +158,22 @@ func main() {
 			fmt.Printf("\tpower.min_limit: %v\n", minLimit / 1000)
 			fmt.Printf("\tpower.max_limit: %v\n", maxLimit / 1000)
 		}
+
+        /* Ignore errors here, if the library is not loaded something else
+        must have fail before */
+		GrClockCurrent, _ := dev.GrClock()
+		GrClockMax, _ := dev.GrMaxClock()
+		fmt.Printf("\tgraphics clock (current / max): %v / %v\n", GrClockCurrent, GrClockMax)
+		SMClockCurrent, _ := dev.SMClock()
+		SMClockMax, _ := dev.SMMaxClock()
+		fmt.Printf("\tSM clock (current / max): %v / %v\n", SMClockCurrent, SMClockMax)
+		MemClockCurrent, _ := dev.MemClock()
+		MemClockMax, _ := dev.MemMaxClock()
+		fmt.Printf("\tMemory clock (current / max): %v / %v\n", MemClockCurrent, MemClockMax)
+		VideoClockCurrent, _ := dev.VideoClock()
+		VideoClockMax, _ := dev.VideoMaxClock()
+		fmt.Printf("\tVideo clock (current / max): %v / %v\n", VideoClockCurrent, VideoClockMax)
+
 
 		powerDraw, err := dev.PowerUsage()
 		if err != nil {
@@ -158,6 +229,13 @@ func main() {
 			fmt.Printf("\tdev.DeviceGetAccountingMode() error: %v\n", err)
 		} else {
 		    fmt.Printf("\taccounting.mode enable: %v\n", modeStats)
+        }
+
+		computeMode, err := dev.ComputeMode()
+		if err != nil {
+			fmt.Printf("\tdev.ComputeMode() error: %v\n", err)
+		} else {
+		    fmt.Printf("\tcompute mode: %d (%v)\n", computeMode, computeMode)
         }
 
 		bufferSize, err := dev.AccountingBufferSize()

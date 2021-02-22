@@ -807,6 +807,7 @@ const (
 	ctGraphics      = C.NVML_CLOCK_GRAPHICS
 	ctSM            = C.NVML_CLOCK_SM
 	ctMemory        = C.NVML_CLOCK_MEM
+	ctVideo         = C.NVML_CLOCK_VIDEO
 	pcieUtilTx      = C.NVML_PCIE_UTIL_TX_BYTES
 	pcieUtilRx      = C.NVML_PCIE_UTIL_RX_BYTES
 	szNVML          = C.NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE
@@ -1261,7 +1262,7 @@ func (d Device) SetComputeMode(mode uint) error {
 	return errorString(r)
 }
 
-// PerformanceState returns the current compute mode of the device.
+// PerformanceState returns the current performance state of the device.
 func (d Device) PerformanceState() (uint, error) {
 	if C.nvmlHandle == nil {
 		return 0, errLibraryNotLoaded
@@ -1291,13 +1292,23 @@ func (d Device) SMClock() (uint, error) {
 	return uint(clockMHz), errorString(r)
 }
 
-// MemClock returns the application memory clock of the device.
+// MemClock returns the memory clock of the device.
 func (d Device) MemClock() (uint, error) {
 	if C.nvmlHandle == nil {
 		return 0, errLibraryNotLoaded
 	}
 	var clockMHz C.uint
 	r := C.nvmlDeviceGetClockInfo(d.dev, ctMemory, &clockMHz)
+	return uint(clockMHz), errorString(r)
+}
+
+// VideoClock returns the memory clock of the device.
+func (d Device) VideoClock() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var clockMHz C.uint
+	r := C.nvmlDeviceGetClockInfo(d.dev, ctVideo, &clockMHz)
 	return uint(clockMHz), errorString(r)
 }
 
@@ -1328,6 +1339,16 @@ func (d Device) MemMaxClock() (uint, error) {
 	}
 	var clockMHz C.uint
 	r := C.nvmlDeviceGetMaxClockInfo(d.dev, ctMemory, &clockMHz)
+	return uint(clockMHz), errorString(r)
+}
+
+// VideoClock returns the memory clock of the device.
+func (d Device) VideoMaxClock() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var clockMHz C.uint
+	r := C.nvmlDeviceGetMaxClockInfo(d.dev, ctVideo, &clockMHz)
 	return uint(clockMHz), errorString(r)
 }
 
