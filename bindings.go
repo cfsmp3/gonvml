@@ -1083,6 +1083,7 @@ const (
 	ClockTypeGraphics ClockType = C.NVML_CLOCK_GRAPHICS
 	ClockTypeSM       ClockType = C.NVML_CLOCK_SM
 	ClockTypeMem      ClockType = C.NVML_CLOCK_MEM
+	ClockTypeVideo    ClockType = C.NVML_CLOCK_VIDEO
 )
 
 func (ct ClockType) String() string {
@@ -1093,6 +1094,8 @@ func (ct ClockType) String() string {
 		return "sm"
 	case ClockTypeMem:
 		return "memory"
+	case ClockTypeVideo:
+		return "video"
 	default:
 		return "unknown"
 	}

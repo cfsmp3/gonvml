@@ -137,6 +137,13 @@ func main() {
 		}
 		fmt.Printf("\tmemory.total: %v, memory.used: %v\n", totalMemory, usedMemory)
 
+		totalBAR1Memory, usedBAR1Memory, err := dev.Bar1MemoryInfo()
+		if err != nil {
+			fmt.Printf("\tdev.Bar1MemoryInfo() error: %v\n", err)
+			return
+		}
+		fmt.Printf("\tBAR1 memory.total: %v, memory.used: %v\n", totalBAR1Memory, usedBAR1Memory)
+
 		gpuUtilization, memoryUtilization, err := dev.UtilizationRates()
 		if err != nil {
 			fmt.Printf("\tdev.UtilizationRates() error: %v\n", err)
@@ -157,6 +164,13 @@ func main() {
 		} else {
 			fmt.Printf("\tpower.min_limit: %v\n", minLimit / 1000)
 			fmt.Printf("\tpower.max_limit: %v\n", maxLimit / 1000)
+		}
+
+		powerState, err := dev.PowerState()
+		if err != nil {
+			fmt.Printf("\tdev.PowerState() error: %v\n", err)
+		} else {
+			fmt.Printf("\tpower.state: %d (%v)\n", powerState, powerState)
 		}
 
         /* Ignore errors here, if the library is not loaded something else
