@@ -593,10 +593,6 @@ nvmlReturn_t nvmlInit_dl(void) {
   if (nvmlDeviceGetPowerUsageFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
-  nvmlDeviceGetPowerManagementLimitFunc = dlsym(nvmlHandle, "nvmlDeviceGetPowerManagementLimit");
-  if (nvmlDeviceGetPowerManagementLimitFunc == NULL) {
-    return NVML_ERROR_FUNCTION_NOT_FOUND;
-  }
   nvmlDeviceGetPowerManagementLimitConstraintsFunc = dlsym(nvmlHandle, "nvmlDeviceGetPowerManagementLimitConstraints");
   if (nvmlDeviceGetPowerManagementLimitConstraintsFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;

@@ -151,11 +151,11 @@ func main() {
 		}
 		fmt.Printf("\tutilization.gpu: %v, utilization.memory: %v\n", gpuUtilization, memoryUtilization)
 
-		powerLimit, err := dev.PowerLimit()
+		DefaultPowerLimit, err := dev.DefaultPowerLimit()
 		if err != nil {
-			fmt.Printf("\tdev.PowerLimit() error: %v\n", err)
+			fmt.Printf("\tdev.DefaultPowerLimit() error: %v\n", err)
 		} else {
-			fmt.Printf("\tpower.limit: %v\n", powerLimit)
+			fmt.Printf("\tpower.limit.default: %v\n", DefaultPowerLimit)
 		}
 
 		minLimit, maxLimit, err := dev.PowerLimitConstraints()
@@ -164,6 +164,14 @@ func main() {
 		} else {
 			fmt.Printf("\tpower.min_limit: %v\n", minLimit / 1000)
 			fmt.Printf("\tpower.max_limit: %v\n", maxLimit / 1000)
+		}
+
+		limit_mgmt, limit_enforced, err := dev.PowerLimits()
+		if err != nil {
+			fmt.Printf("\tdev.PowerLimits() error: %v\n", err)
+		} else {
+			fmt.Printf("\tpower.limit (management): %v\n", limit_mgmt / 1000)
+			fmt.Printf("\tpower.limit (enforced): %v\n", limit_enforced / 1000)
 		}
 
 		powerState, err := dev.PowerState()
@@ -175,6 +183,8 @@ func main() {
 
         /* Ignore errors here, if the library is not loaded something else
         must have fail before */
+        /* CLOCKS */
+		fmt.Printf("\n\tCLOCKS\n")
 		GrClockCurrent, _ := dev.GrClock()
 		GrClockMax, _ := dev.GrMaxClock()
 		fmt.Printf("\tgraphics clock (current / max): %v / %v\n", GrClockCurrent, GrClockMax)
@@ -188,7 +198,20 @@ func main() {
 		VideoClockMax, _ := dev.VideoMaxClock()
 		fmt.Printf("\tVideo clock (current / max): %v / %v\n", VideoClockCurrent, VideoClockMax)
 
+        /* PCI */
+		fmt.Printf("\n\tPCI\n")
+        pci_tx, _ := dev.PcieTxThroughput()
+        pci_rx, _ := dev.PcieRxThroughput()
+		fmt.Printf("\tPCI throughput in KB/s: %v / %v\n", pci_tx, pci_rx)
+        pci_link_gen_current, _ := dev.PcieGeneration()
+        pci_link_gen_max, _ := dev.PcieMaxGeneration()
+		fmt.Printf("\tCurrent PCIe link generation (current / max): %v / %v\n", pci_link_gen_current, pci_link_gen_max )
+        pci_link_width_current, _ := dev.PcieWidth()
+        pci_link_width_max, _ := dev.PcieMaxWidth()
+		fmt.Printf("\tCurrent PCIe link width (current / max): %v / %v\n", pci_link_width_current, pci_link_width_max)
 
+
+        /* POWER */
 		powerDraw, err := dev.PowerUsage()
 		if err != nil {
 			fmt.Printf("\tdev.PowerUsage() error: %v\n", err)
@@ -210,12 +233,22 @@ func main() {
 		    fmt.Printf("\taverage utilization.gpu for last 10s: %v\n", averageGPUUtilization)
         }
 
+        /* TEMPERATURE AND FANS */
+		fmt.Printf("\n\tTEMPERATURE AND FANS\n")
 		temperature, err := dev.Temperature()
 		if err != nil {
 			fmt.Printf("\tdev.Temperature() error: %v\n", err)
 			return
 		}
 		fmt.Printf("\ttemperature.gpu: %v C\n", temperature)
+
+		temp_threshold_shutdown, temp_threshold_slowdown, err := dev.TemperatureThresholds()
+		if err != nil {
+			fmt.Printf("\tdev.TemperatureThresholds() error: %v\n", err)
+		} else {
+			fmt.Printf("\temperature.threshold.shutdown: %v\n", temp_threshold_shutdown)
+			fmt.Printf("\temperature.threshold.slowdown: %v\n", temp_threshold_slowdown)
+		}
 
 		fanSpeed, err := dev.FanSpeed()
 		if err != nil {
