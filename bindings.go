@@ -313,14 +313,6 @@ nvmlReturn_t nvmlDeviceGetMaxPcieLinkWidth(nvmlDevice_t device, unsigned int *ma
   return nvmlDeviceGetMaxPcieLinkWidthFunc(device, maxLinkWidth);
 }
 
-nvmlReturn_t (*nvmlDeviceGetPowerStateFunc)(nvmlDevice_t device, nvmlPstates_t* pState);
-nvmlReturn_t nvmlDeviceGetPowerState(nvmlDevice_t device, nvmlPstates_t* pState){
-	if (nvmlDeviceGetPowerStateFunc == NULL) {
-		return NVML_ERROR_FUNCTION_NOT_FOUND;
-	}
-	return nvmlDeviceGetPowerStateFunc(device, pState);
-}
-
 nvmlReturn_t (*nvmlDeviceGetEnforcedPowerLimitFunc)(nvmlDevice_t device, unsigned int* limit);
 nvmlReturn_t nvmlDeviceGetEnforcedPowerLimit(nvmlDevice_t device, unsigned int* limit){
 	if (nvmlDeviceGetEnforcedPowerLimitFunc == NULL) {
@@ -640,10 +632,6 @@ nvmlReturn_t nvmlInit_dl(void) {
   }
   nvmlDeviceGetEnforcedPowerLimitFunc = dlsym(nvmlHandle, "nvmlDeviceGetEnforcedPowerLimit");
 	if (nvmlDeviceGetEnforcedPowerLimitFunc == NULL) {
-    return NVML_ERROR_FUNCTION_NOT_FOUND;
-  }
-  nvmlDeviceGetPowerStateFunc = dlsym(nvmlHandle, "nvmlDeviceGetPowerState");
-	if (nvmlDeviceGetPowerStateFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlDeviceGetTemperatureFunc = dlsym(nvmlHandle, "nvmlDeviceGetTemperature");
@@ -1482,16 +1470,6 @@ func (d Device) PowerLimitConstraints() (uint, uint, error) {
 	var max C.uint
 	r := C.nvmlDeviceGetPowerManagementLimitConstraints(d.dev, &min, &max)
 	return uint(min), uint(max), errorString(r)
-}
-
-// PowerState returns the current PState of the GPU Device
-func (d Device) PowerState() (PowerState, error) {
-	if C.nvmlHandle == nil {
-		return PowerStateUnknown, errLibraryNotLoaded
-	}
-	var ps C.nvmlPstates_t
-	r := C.nvmlDeviceGetPowerState(d.dev, &ps)
-	return PowerState(ps), errorString(r)
 }
 
 // PowerLimits returns the devices power Limits

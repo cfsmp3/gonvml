@@ -174,13 +174,6 @@ func main() {
 			fmt.Printf("\tpower.limit (enforced): %v\n", limit_enforced / 1000)
 		}
 
-		powerState, err := dev.PowerState()
-		if err != nil {
-			fmt.Printf("\tdev.PowerState() error: %v\n", err)
-		} else {
-			fmt.Printf("\tpower.state: %d (%v)\n", powerState, powerState)
-		}
-
         /* Ignore errors here, if the library is not loaded something else
         must have fail before */
         /* CLOCKS */
