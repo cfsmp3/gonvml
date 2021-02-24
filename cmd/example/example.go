@@ -273,11 +273,26 @@ func main() {
 		    fmt.Printf("\tfan.speed: %v%%\n", fanSpeed)
         }
 
-		encoderUtilization, _, err := dev.EncoderUtilization()
+        /* MEMORY */
+		fmt.Printf("\n\tMEMORY\n")
+		m1, m2, m3, m4, err := dev.TotalEccErrors()
+		if err != nil {
+			fmt.Printf("\tdev.dev.TotalEccErrors() error: %v\n", err)
+		} else {
+		    fmt.Printf("\tCorrected errors since last reboot: %v%%\n", m1)
+		    fmt.Printf("\tCorrected errors ever: %v%%\n", m2)
+		    fmt.Printf("\tUncorrected errors since last reboot: %v%%\n", m3)
+		    fmt.Printf("\tUncorrected errors ever: %v%%\n", m4)
+        }
+
+
+        /* UTILIZATION */
+		fmt.Printf("\n\tUTILIZATION\n")
+		encoderUtilization, sampling_period, err := dev.EncoderUtilization()
 		if err != nil {
 			fmt.Printf("\tdev.EncoderUtilization() error: %v\n", err)
 		} else {
-		    fmt.Printf("\tutilization.encoder: %d\n", encoderUtilization)
+		    fmt.Printf("\tutilization.encoder: %d over %d microseconds\n", encoderUtilization, sampling_period)
         }
 
 		decoderUtilization, _, err := dev.DecoderUtilization()
@@ -287,6 +302,16 @@ func main() {
 		    fmt.Printf("\tutilization.decoder: %d\n", decoderUtilization)
         }
 
+
+		caph264, caphevc, err := dev.EncoderCapacity()
+		if err != nil {
+			fmt.Printf("\tdev.EncoderCapacity() error: %v\n", err)
+		} else {
+            fmt.Printf("\tEncoder Capacity H264: %d  HEVC: %d\n", caph264, caphevc)
+        }
+
+
+		fmt.Printf("\n")
 		modeStats, err := dev.AccountingMode()
 		if err != nil {
 			fmt.Printf("\tdev.DeviceGetAccountingMode() error: %v\n", err)

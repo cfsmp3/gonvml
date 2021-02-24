@@ -130,6 +130,16 @@ nvmlReturn_t DECLDIR nvmlDeviceGetTotalEnergyConsumption(nvmlDevice_t device, un
 	return nvmlDeviceGetTotalEnergyConsumptionFunc(device, energy);
 }
 
+nvmlReturn_t (*nvmlDeviceGetTotalEccErrorsFunc)(nvmlDevice_t device, nvmlMemoryErrorType_t errorType, nvmlEccCounterType_t counterType, unsigned long long *eccCounts);
+nvmlReturn_t DECLDIR nvmlDeviceGetTotalEccErrors(nvmlDevice_t device, nvmlMemoryErrorType_t errorType, nvmlEccCounterType_t counterType, unsigned long long *eccCounts)
+{
+	if(*nvmlDeviceGetTotalEccErrorsFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetTotalEccErrorsFunc(device, errorType, counterType, eccCounts);
+}
+
+
 nvmlReturn_t (*nvmlDeviceGetBAR1MemoryInfoFunc)(nvmlDevice_t device, nvmlBAR1Memory_t* bar1Memory);
 nvmlReturn_t nvmlDeviceGetBAR1MemoryInfo(nvmlDevice_t device, nvmlBAR1Memory_t* bar1Memory) {
 	if(nvmlDeviceGetVbiosVersionFunc == NULL) {
@@ -362,6 +372,14 @@ nvmlReturn_t nvmlDeviceGetEncoderUtilization(nvmlDevice_t device, unsigned int* 
   return nvmlDeviceGetEncoderUtilizationFunc(device, utilization, samplingPeriodUs);
 }
 
+nvmlReturn_t (*nvmlDeviceGetEncoderCapacityFunc) (nvmlDevice_t device, nvmlEncoderType_t encoderQueryType, unsigned int *encoderCapacity);
+nvmlReturn_t DECLDIR nvmlDeviceGetEncoderCapacity (nvmlDevice_t device, nvmlEncoderType_t encoderQueryType, unsigned int *encoderCapacity) {
+  if (*nvmlDeviceGetEncoderCapacityFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetEncoderCapacityFunc(device, encoderQueryType, encoderCapacity);
+}
+
 nvmlReturn_t (*nvmlDeviceGetDecoderUtilizationFunc)(nvmlDevice_t device, unsigned int* utilization, unsigned int* samplingPeriodUs);
 nvmlReturn_t nvmlDeviceGetDecoderUtilization(nvmlDevice_t device, unsigned int* utilization, unsigned int* samplingPeriodUs) {
   if (nvmlDeviceGetDecoderUtilizationFunc == NULL) {
@@ -527,6 +545,10 @@ nvmlReturn_t nvmlInit_dl(void) {
 	if(nvmlDeviceGetTotalEnergyConsumptionFunc == NULL) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
 	}
+	nvmlDeviceGetTotalEccErrorsFunc = dlsym(nvmlHandle, "nvmlDeviceGetTotalEccErrors");
+	if(nvmlDeviceGetTotalEccErrorsFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
 	nvmlDeviceGetSerialFunc = dlsym(nvmlHandle, "nvmlDeviceGetSerial");
 	if(nvmlDeviceGetSerialFunc == NULL) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
@@ -665,6 +687,10 @@ nvmlReturn_t nvmlInit_dl(void) {
   }
   nvmlDeviceGetEncoderUtilizationFunc = dlsym(nvmlHandle, "nvmlDeviceGetEncoderUtilization");
   if (nvmlDeviceGetEncoderUtilizationFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  nvmlDeviceGetEncoderCapacityFunc = dlsym(nvmlHandle, "nvmlDeviceGetEncoderCapacity");
+  if (nvmlDeviceGetEncoderCapacityFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
   nvmlDeviceGetDecoderUtilizationFunc = dlsym(nvmlHandle, "nvmlDeviceGetDecoderUtilization");
@@ -1222,17 +1248,6 @@ func (d Device) CurrentClocksThrottleReasons() (uint64, error) {
 	return uint64(bitmap), errorString(r)
 }
 
-
-// CurrentClocksThrottleReasons returns reasons (bitmap) for the GPU being throttled
-func (d Device) TotalEnergyConsumption() (uint64, error) {
-	if C.nvmlHandle == nil {
-		return 0, errLibraryNotLoaded
-	}
-    var energy C.ulonglong
-	r := C.nvmlDeviceGetTotalEnergyConsumption(d.dev, &energy)
-	return uint64(energy), errorString(r)
-}
-
 func (d Device) MostSeriousClocksThrottleReason() (int, error) {
     var bitmap, err = d.CurrentClocksThrottleReasons ()
     if (bitmap & C.nvmlClocksThrottleReasonDisplayClockSetting) != 0 {
@@ -1266,6 +1281,31 @@ func (d Device) MostSeriousClocksThrottleReason() (int, error) {
         return ThrottlingReasonIdle, err
     }
     return ThrottlingReasonNone, err
+}
+
+// TotalEnergyConsumption total energy consumption for this GPU in millijoules (mJ) since the driver was last reloaded.
+func (d Device) TotalEnergyConsumption() (uint64, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+    var energy C.ulonglong
+	r := C.nvmlDeviceGetTotalEnergyConsumption(d.dev, &energy)
+	return uint64(energy), errorString(r)
+}
+
+// TotalEccErrors: Memory errors. 
+func (d Device) TotalEccErrors() (uint64, uint64, uint64, uint64, error) {
+	if C.nvmlHandle == nil {
+		return 0, 0, 0, 0, errLibraryNotLoaded
+	}
+    var e1,e2,e3,e4 C.ulonglong
+	r := C.nvmlDeviceGetTotalEccErrors(d.dev, C.NVML_MEMORY_ERROR_TYPE_CORRECTED, C.NVML_VOLATILE_ECC, &e1)
+    // Since the only possible error is that the function itself doesn't exist, if we get here we're probably OK
+	C.nvmlDeviceGetTotalEccErrors(d.dev, C.NVML_MEMORY_ERROR_TYPE_CORRECTED, C.NVML_AGGREGATE_ECC, &e2)
+	C.nvmlDeviceGetTotalEccErrors(d.dev, C.NVML_MEMORY_ERROR_TYPE_UNCORRECTED, C.NVML_VOLATILE_ECC, &e3)
+	C.nvmlDeviceGetTotalEccErrors(d.dev, C.NVML_MEMORY_ERROR_TYPE_UNCORRECTED, C.NVML_AGGREGATE_ECC, &e4)
+
+	return uint64(e1), uint64(e2), uint64(e3), uint64(e4), errorString(r)
 }
 
 // Serial returns the globally unique board serial number associated with this device's board.
@@ -1692,6 +1732,17 @@ func (d Device) EncoderUtilization() (uint, uint, error) {
 	var n, sp C.uint
 	r := C.nvmlDeviceGetEncoderUtilization(d.dev, &n, &sp)
 	return uint(n), uint(sp), errorString(r)
+}
+
+//  Retrieves the current capacity of the device's encoder, as a percentage of maximum encoder capacity with valid values in the range 0-100.
+func (d Device) EncoderCapacity() (uint, uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, 0, errLibraryNotLoaded
+	}
+	var capacity_h264, capacity_hevc C.uint
+	r := C.nvmlDeviceGetEncoderCapacity(d.dev, C.NVML_ENCODER_QUERY_H264, &capacity_h264)
+	C.nvmlDeviceGetEncoderCapacity(d.dev, C.NVML_ENCODER_QUERY_HEVC, &capacity_hevc)
+	return uint(capacity_h264), uint(capacity_h264), errorString(r)
 }
 
 // DecoderUtilization returns the percent of time over the last sample period during which the GPU video decoder was being used.
