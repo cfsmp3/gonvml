@@ -198,6 +198,21 @@ func main() {
 		VideoClockMax, _ := dev.VideoMaxClock()
 		fmt.Printf("\tVideo clock (current / max): %v / %v\n", VideoClockCurrent, VideoClockMax)
 
+        /* THROTTLING */
+		fmt.Printf("\n\tTHROTTLING\n")
+		throttlereasons, err := dev.CurrentClocksThrottleReasons()
+		if err != nil {
+			fmt.Printf("\tdev.throttlereasons() error: %v\n", err)
+			return
+		}
+		fmt.Printf("\tthrottlereasons (bitmap): %v\n", throttlereasons)
+		throttleseriousreason, err := dev.MostSeriousClocksThrottleReason()
+		if err != nil {
+			fmt.Printf("\tdev.throttleseriousreason() error: %v\n", err)
+			return
+		}
+		fmt.Printf("\tMost serious throttle reason: %v\n", throttleseriousreason)
+
         /* PCI */
 		fmt.Printf("\n\tPCI\n")
         pci_tx, _ := dev.PcieTxThroughput()

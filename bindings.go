@@ -112,6 +112,15 @@ nvmlReturn_t nvmlDeviceGetVbiosVersion (nvmlDevice_t device, char* version, unsi
 	return nvmlDeviceGetVbiosVersionFunc(device, version, length);
 }
 
+nvmlReturn_t (*nvmlDeviceGetCurrentClocksThrottleReasonsFunc)(nvmlDevice_t device, unsigned long long *clocksThrottleReasons);
+nvmlReturn_t nvmlDeviceGetCurrentClocksThrottleReasons(nvmlDevice_t device, unsigned long long *clocksThrottleReasons)
+{
+	if(*nvmlDeviceGetCurrentClocksThrottleReasonsFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetCurrentClocksThrottleReasonsFunc(device, clocksThrottleReasons);
+}
+
 nvmlReturn_t (*nvmlDeviceGetBAR1MemoryInfoFunc)(nvmlDevice_t device, nvmlBAR1Memory_t* bar1Memory);
 nvmlReturn_t nvmlDeviceGetBAR1MemoryInfo(nvmlDevice_t device, nvmlBAR1Memory_t* bar1Memory) {
 	if(nvmlDeviceGetVbiosVersionFunc == NULL) {
@@ -507,6 +516,10 @@ nvmlReturn_t nvmlInit_dl(void) {
 	}
 	nvmlDeviceGetVbiosVersionFunc = dlsym(nvmlHandle, "nvmlDeviceGetVbiosVersion");
 	if(nvmlDeviceGetDisplayActiveFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	nvmlDeviceGetCurrentClocksThrottleReasonsFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrentClocksThrottleReasons");
+	if(nvmlDeviceGetCurrentClocksThrottleReasonsFunc == NULL) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
 	}
 	nvmlDeviceGetSerialFunc = dlsym(nvmlHandle, "nvmlDeviceGetSerial");
@@ -1032,6 +1045,24 @@ const (
 	PowerStateUnknown PowerState = C.NVML_PSTATE_UNKNOWN
 )
 
+type ThrottlingReason int
+// Enumeration of reasons for throttling
+const (
+    ThrottlingReasonNone = 0
+    ThrottlingReasonIdle = 1
+    ThrottlingReasonApplicationClock = 2
+    ThrottlingReasonUserDefinedClocks = 3
+    ThrottlingReasonSwPowerCap = 4
+    ThrottlingReasonHwSlowdown = 5
+    ThrottlingReasonSyncBoost = 6
+    ThrottlingReasonSwThermalSlowdown = 7
+    ThrottlingReasonHwThermalSlowdown = 8
+    ThrottlingReasonHwPowerBrakeSlowdown = 9
+    ThrottlingReasonDisplayClockSetting = 10
+)
+
+
+
 func (ps PowerState) String() string {
 	switch ps {
 	case PowerState0:
@@ -1178,6 +1209,52 @@ func (d Device) VBiosVersion() (string, error) {
 	var version [szVBiosVersion]C.char
 	r := C.nvmlDeviceGetVbiosVersion(d.dev, &version[0], szVBiosVersion)
 	return C.GoString(&version[0]), errorString(r)
+}
+
+// CurrentClocksThrottleReasons returns reasons (bitmap) for the GPU being throttled
+func (d Device) CurrentClocksThrottleReasons() (uint64, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+    var bitmap C.ulonglong
+	r := C.nvmlDeviceGetCurrentClocksThrottleReasons(d.dev, &bitmap)
+	return uint64(bitmap), errorString(r)
+}
+
+
+func (d Device) MostSeriousClocksThrottleReason() (int, error) {
+    var bitmap, err = d.CurrentClocksThrottleReasons ()
+    if (bitmap & C.nvmlClocksThrottleReasonDisplayClockSetting) != 0 {
+        return ThrottlingReasonDisplayClockSetting, err
+    }
+    if (bitmap & C.nvmlClocksThrottleReasonHwPowerBrakeSlowdown) != 0 {
+        return ThrottlingReasonHwPowerBrakeSlowdown, err
+    }
+    if (bitmap & C.nvmlClocksThrottleReasonHwThermalSlowdown) != 0 {
+        return ThrottlingReasonHwThermalSlowdown, err
+    }
+    if (bitmap & C.nvmlClocksThrottleReasonSwThermalSlowdown) != 0 {
+        return ThrottlingReasonSwThermalSlowdown, err
+    }
+    if (bitmap & C.nvmlClocksThrottleReasonSyncBoost) != 0 {
+        return ThrottlingReasonSyncBoost, err
+    }
+    if (bitmap & C.nvmlClocksThrottleReasonHwSlowdown) != 0 {
+        return ThrottlingReasonHwSlowdown, err
+    }
+    if (bitmap & C.nvmlClocksThrottleReasonSwPowerCap) != 0 {
+        return ThrottlingReasonSwPowerCap, err
+    }
+    if (bitmap & C.nvmlClocksThrottleReasonUserDefinedClocks) != 0 {
+        return ThrottlingReasonUserDefinedClocks, err
+    }
+    if (bitmap & C.nvmlClocksThrottleReasonApplicationsClocksSetting) != 0 {
+        return ThrottlingReasonApplicationClock, err
+    }
+    if (bitmap & C.nvmlClocksThrottleReasonGpuIdle) != 0 {
+        return ThrottlingReasonIdle, err
+    }
+    return ThrottlingReasonNone, err
 }
 
 // Serial returns the globally unique board serial number associated with this device's board.
