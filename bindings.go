@@ -1528,7 +1528,7 @@ func (d Device) PowerLimit() (uint, error) {
 
 // DefaultPowerLimit returns the power limit for this GPU and its associated circuitry
 // in milliwatts
-func (d Device) DefaultPowerLimit() (uint, error) {
+func (d Device) PowerManagementDefaultLimit() (uint, error) {
 	if C.nvmlHandle == nil {
 		return 0, errLibraryNotLoaded
 	}

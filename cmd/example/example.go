@@ -151,11 +151,11 @@ func main() {
 		}
 		fmt.Printf("\tutilization.gpu: %v, utilization.memory: %v\n", gpuUtilization, memoryUtilization)
 
-		DefaultPowerLimit, err := dev.DefaultPowerLimit()
+		PowerManagementDefaultLimit, err := dev.PowerManagementDefaultLimit()
 		if err != nil {
-			fmt.Printf("\tdev.DefaultPowerLimit() error: %v\n", err)
+			fmt.Printf("\tdev.PowerManagementDefaultLimit() error: %v\n", err)
 		} else {
-			fmt.Printf("\tpower.limit.default: %v\n", DefaultPowerLimit)
+			fmt.Printf("\tpower.limit.default: %v\n", PowerManagementDefaultLimit)
 		}
 
 		minLimit, maxLimit, err := dev.PowerLimitConstraints()
