@@ -220,11 +220,19 @@ func main() {
 
 
         /* POWER */
+		fmt.Printf("\n\tPOWER\n")
 		powerDraw, err := dev.PowerUsage()
 		if err != nil {
 			fmt.Printf("\tdev.PowerUsage() error: %v\n", err)
 		} else {
 		    fmt.Printf("\tpower.draw: %v\n", powerDraw)
+        }
+
+		energy, err := dev.TotalEnergyConsumption()
+		if err != nil {
+			fmt.Printf("\tdev.TotalEnergyConsumption() error: %v\n", err)
+		} else {
+            fmt.Printf("\tTotalEnergyConsumption: %v\n", energy)
         }
 
 		averagePowerDraw, err := dev.AveragePowerUsage(10 * time.Second)

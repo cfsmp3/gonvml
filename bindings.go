@@ -115,10 +115,19 @@ nvmlReturn_t nvmlDeviceGetVbiosVersion (nvmlDevice_t device, char* version, unsi
 nvmlReturn_t (*nvmlDeviceGetCurrentClocksThrottleReasonsFunc)(nvmlDevice_t device, unsigned long long *clocksThrottleReasons);
 nvmlReturn_t nvmlDeviceGetCurrentClocksThrottleReasons(nvmlDevice_t device, unsigned long long *clocksThrottleReasons)
 {
-	if(*nvmlDeviceGetCurrentClocksThrottleReasonsFunc == NULL) {
+	if(nvmlDeviceGetCurrentClocksThrottleReasonsFunc == NULL) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
 	}
 	return nvmlDeviceGetCurrentClocksThrottleReasonsFunc(device, clocksThrottleReasons);
+}
+
+nvmlReturn_t (*nvmlDeviceGetTotalEnergyConsumptionFunc)(nvmlDevice_t device, unsigned long long *energy);
+nvmlReturn_t DECLDIR nvmlDeviceGetTotalEnergyConsumption(nvmlDevice_t device, unsigned long long *energy)
+{
+	if(nvmlDeviceGetTotalEnergyConsumptionFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	return nvmlDeviceGetTotalEnergyConsumptionFunc(device, energy);
 }
 
 nvmlReturn_t (*nvmlDeviceGetBAR1MemoryInfoFunc)(nvmlDevice_t device, nvmlBAR1Memory_t* bar1Memory);
@@ -512,6 +521,10 @@ nvmlReturn_t nvmlInit_dl(void) {
 	}
 	nvmlDeviceGetCurrentClocksThrottleReasonsFunc = dlsym(nvmlHandle, "nvmlDeviceGetCurrentClocksThrottleReasons");
 	if(nvmlDeviceGetCurrentClocksThrottleReasonsFunc == NULL) {
+		return NVML_ERROR_FUNCTION_NOT_FOUND;
+	}
+	nvmlDeviceGetTotalEnergyConsumptionFunc = dlsym(nvmlHandle, "nvmlDeviceGetTotalEnergyConsumption");
+	if(nvmlDeviceGetTotalEnergyConsumptionFunc == NULL) {
 		return NVML_ERROR_FUNCTION_NOT_FOUND;
 	}
 	nvmlDeviceGetSerialFunc = dlsym(nvmlHandle, "nvmlDeviceGetSerial");
@@ -1209,6 +1222,16 @@ func (d Device) CurrentClocksThrottleReasons() (uint64, error) {
 	return uint64(bitmap), errorString(r)
 }
 
+
+// CurrentClocksThrottleReasons returns reasons (bitmap) for the GPU being throttled
+func (d Device) TotalEnergyConsumption() (uint64, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+    var energy C.ulonglong
+	r := C.nvmlDeviceGetTotalEnergyConsumption(d.dev, &energy)
+	return uint64(energy), errorString(r)
+}
 
 func (d Device) MostSeriousClocksThrottleReason() (int, error) {
     var bitmap, err = d.CurrentClocksThrottleReasons ()
